@@ -1,0 +1,2 @@
+TELEGRAM_BOT_TOKEN=test_token
+API_HOST=http://localhost:8000

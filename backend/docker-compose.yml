@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-veryberry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-veryberry}
+      POSTGRES_DB: ${POSTGRES_DB:-veryberry}
+    # SECURITY: DB port exposed only on localhost, not externally
+    # Remove ports section entirely in production, use internal Docker network
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./migrations:/app/migrations
+      - ./uploads:/app/uploads
+      - ./scripts:/app/scripts
+
+  telegram-bot:
+    build: .
+    command: python telegram_bot.py
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ./telegram_bot.py:/app/telegram_bot.py
+      - ./app:/app/app
+
+  auth-bot:
+    build: .
+    command: python auth_bot.py
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ./auth_bot.py:/app/auth_bot.py
+
+volumes:
+  db_data:
+

@@ -1,0 +1,29 @@
+# Core framework (starlette comes with fastapi)
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Database
+sqlalchemy==2.0.36
+alembic==1.13.2
+psycopg[binary]==3.2.3
+
+# Validation
+pydantic[email]==2.10.0
+pydantic-settings==2.6.1
+
+# Security
+python-jose[cryptography]==3.4.0  # PYSEC-2024-232, PYSEC-2024-233 fixed
+passlib[bcrypt]==1.7.4
+
+# HTTP / Forms
+python-multipart==0.0.22  # CVE-2024-53981, CVE-2026-24486 fixed
+httpx==0.27.0
+
+# Telegram
+python-telegram-bot==21.7
+
+# Rate limiting
+slowapi==0.1.9
+
+# Security audit (dev only)
+pip-audit==2.10.0

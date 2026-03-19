@@ -1,0 +1,144 @@
+import { Layout, Menu, Typography, Button, Space, theme } from 'antd'
+import {
+  AppstoreOutlined,
+  ShopOutlined,
+  GiftOutlined,
+  ShoppingCartOutlined,
+  SettingOutlined,
+  DeploymentUnitOutlined,
+  UserOutlined,
+  BellOutlined,
+  SunOutlined,
+  MoonOutlined,
+  InboxOutlined,
+} from '@ant-design/icons'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useLogout } from '../hooks/useAuth'
+import { useTheme } from '../contexts/ThemeContext'
+
+const { Header, Sider, Content } = Layout
+
+const menuItems = [
+  { key: '/', icon: <AppstoreOutlined />, label: <Link to="/">Главная</Link> },
+  {
+    key: '/catalog',
+    icon: <ShopOutlined />,
+    label: 'Каталог',
+    children: [
+      { key: '/catalog/categories', label: <Link to="/catalog/categories">Категории</Link> },
+      { key: '/catalog/products', label: <Link to="/catalog/products">Товары</Link> },
+      { key: '/catalog/modifications', label: <Link to="/catalog/modifications">Модификации</Link> },
+      { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации</Link> },
+    ],
+  },
+  {
+    key: '/stock',
+    icon: <InboxOutlined />,
+    label: 'Остатки',
+    children: [
+      { key: '/stock', label: <Link to="/stock">Дашборд</Link> },
+      { key: '/stock/deliveries', label: <Link to="/stock/deliveries">Приёмки</Link> },
+      { key: '/stock/inventories', label: <Link to="/stock/inventories">Инвентаризации</Link> },
+      { key: '/stock/items', label: <Link to="/stock/items">Номенклатура</Link> },
+      { key: '/stock/movements', label: <Link to="/stock/movements">История</Link> },
+    ],
+  },
+  {
+    key: '/customers',
+    icon: <UserOutlined />,
+    label: <Link to="/customers">Клиенты</Link>,
+  },
+  {
+    key: '/orders',
+    icon: <ShoppingCartOutlined />,
+    label: <Link to="/orders">Заказы</Link>,
+  },
+  {
+    key: '/marketing',
+    icon: <GiftOutlined />,
+    label: 'Маркетинг',
+    children: [
+      { key: '/marketing/banners', label: <Link to="/marketing/banners">Баннеры</Link> },
+      { key: '/marketing/promo-codes', label: <Link to="/marketing/promo-codes">Промокоды</Link> },
+      { key: '/marketing/notifications', icon: <BellOutlined />, label: <Link to="/marketing/notifications">Push-уведомления</Link> },
+    ],
+  },
+  {
+    key: '/delivery',
+    icon: <DeploymentUnitOutlined />,
+    label: 'Доставка',
+    children: [
+      { key: '/delivery/pickups', label: <Link to="/delivery/pickups">Самовывоз</Link> },
+      { key: '/delivery/zones', label: <Link to="/delivery/zones">Зоны</Link> },
+    ],
+  },
+  {
+    key: '/settings',
+    icon: <SettingOutlined />,
+    label: 'Настройки',
+    children: [
+      { key: '/settings/texts', label: <Link to="/settings/texts">Тексты</Link> },
+      { key: '/settings/loyalty', label: <Link to="/settings/loyalty">Лояльность</Link> },
+      { key: '/settings/store-locations', label: <Link to="/settings/store-locations">Адреса магазинов</Link> },
+    ],
+  },
+]
+
+export const AdminLayout = () => {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const logout = useLogout()
+  const { isDark, toggleTheme } = useTheme()
+  const { token } = theme.useToken()
+
+  const onLogout = async () => {
+    await logout.mutateAsync()
+    navigate('/login')
+  }
+
+  const selectedKeys = [location.pathname.startsWith('/catalog') ? '/catalog' : location.pathname]
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Sider theme={isDark ? 'dark' : 'light'} style={{ background: token.colorBgContainer }}>
+        <div style={{ padding: 16 }}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            Bageatteria
+          </Typography.Title>
+        </div>
+        <Menu
+          mode="inline"
+          selectedKeys={selectedKeys}
+          items={menuItems}
+          style={{ background: 'transparent', borderInlineEnd: 'none' }}
+        />
+      </Sider>
+      <Layout>
+        <Header
+          style={{
+            background: token.colorBgContainer,
+            padding: '0 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography.Text>Админка</Typography.Text>
+          <Space>
+            <Button
+              type="text"
+              icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+              onClick={toggleTheme}
+              title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+            />
+            <Typography.Link onClick={onLogout}>Выйти</Typography.Link>
+          </Space>
+        </Header>
+        <Content style={{ padding: 16 }}>
+          <Outlet />
+        </Content>
+      </Layout>
+    </Layout>
+  )
+}
+
