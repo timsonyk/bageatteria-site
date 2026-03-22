@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Header } from "@/components/Header";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { ProductGrid } from "@/components/ProductGrid";
+import { ProductModal } from "@/components/ProductModal";
+import { LocationSelector } from "@/components/LocationSelector";
 import { getCategories, getProducts } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
 
@@ -13,28 +15,43 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const isScrollingRef = useRef(false);
 
-  // Загрузка категорий и всех товаров
+  // Загрузка категорий
   useEffect(() => {
-    async function loadData() {
+    async function loadCategories() {
+      try {
+        const categoriesData = await getCategories();
+        setCategories(categoriesData.filter((c) => c.is_active).sort((a, b) => a.sort_order - b.sort_order));
+      } catch (err) {
+        setError("Не удалось загрузить категории");
+        console.error(err);
+      }
+    }
+    loadCategories();
+  }, []);
+
+  // Загрузка товаров при смене точки
+  useEffect(() => {
+    async function loadProducts() {
+      if (selectedLocationId === null) return;
+
       setLoading(true);
       try {
-        const [categoriesData, productsData] = await Promise.all([
-          getCategories(),
-          getProducts(),
-        ]);
-        setCategories(categoriesData.filter((c) => c.is_active).sort((a, b) => a.sort_order - b.sort_order));
+        const productsData = await getProducts(undefined, selectedLocationId);
         setProducts(productsData.filter((p) => p.is_active));
       } catch (err) {
-        setError("Не удалось загрузить меню");
+        setError("Не удалось загрузить товары");
         console.error(err);
       } finally {
         setLoading(false);
       }
     }
-    loadData();
-  }, []);
+    loadProducts();
+  }, [selectedLocationId]);
 
   // Группировка товаров по категориям
   const productsByCategory = useMemo(() => {
@@ -76,7 +93,7 @@ export default function MenuPage() {
     });
 
     return () => observer.disconnect();
-  }, [loading, categories]);
+  }, [loading, categories, products]);
 
   // Скролл к категории при клике
   const handleCategorySelect = useCallback((categoryId: number | null) => {
@@ -86,12 +103,32 @@ export default function MenuPage() {
       const element = document.getElementById(`category-${categoryId}`);
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
-        // Разрешаем обновление через IntersectionObserver после завершения скролла
         setTimeout(() => {
           isScrollingRef.current = false;
         }, 800);
       }
     }
+  }, []);
+
+  // Обработка смены точки
+  const handleLocationChange = useCallback((locationId: number | null) => {
+    setSelectedLocationId(locationId);
+  }, []);
+
+  // Обработка клика по товару
+  const handleProductClick = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  }, []);
+
+  // Закрытие модалки
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  // Смена товара в модалке (свайп)
+  const handleProductChange = useCallback((product: Product) => {
+    setSelectedProduct(product);
   }, []);
 
   if (error) {
@@ -112,7 +149,7 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header rightElement={<LocationSelector onLocationChange={handleLocationChange} />} />
 
       <main className="px-4 pb-6">
         {/* Табы категорий */}
@@ -122,9 +159,13 @@ export default function MenuPage() {
           onSelect={handleCategorySelect}
         />
 
-        {loading ? (
+        {loading || selectedLocationId === null ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-gray-500">Нет доступных товаров на этой точке</p>
           </div>
         ) : (
           <div className="flex flex-col gap-8">
@@ -134,18 +175,25 @@ export default function MenuPage() {
 
               return (
                 <section key={category.id} id={`category-${category.id}`} className="scroll-mt-20">
-                  {/* Заголовок категории */}
                   <h2 className="text-[22px] font-bold text-black mb-4">
                     {category.name}
                   </h2>
-                  {/* Сетка товаров категории */}
-                  <ProductGrid products={categoryProducts} />
+                  <ProductGrid products={categoryProducts} onProductClick={handleProductClick} />
                 </section>
               );
             })}
           </div>
         )}
       </main>
+
+      {/* Product Modal */}
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        product={selectedProduct}
+        products={products}
+        onProductChange={handleProductChange}
+      />
     </div>
   );
 }

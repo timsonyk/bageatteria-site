@@ -1,10 +1,13 @@
-import { Category, Product } from "./types";
+import { Category, Product, StoreLocation } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use proxy in browser, direct URL on server
+const API_BASE = typeof window !== "undefined"
+  ? "/api/proxy"
+  : (process.env.BACKEND_URL || "http://localhost:8000");
 
 export async function getCategories(): Promise<Category[]> {
   const res = await fetch(`${API_BASE}/catalog/categories`, {
-    next: { revalidate: 60 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -15,14 +18,19 @@ export async function getCategories(): Promise<Category[]> {
   return data.categories || data;
 }
 
-export async function getProducts(categoryId?: number): Promise<Product[]> {
-  const url = new URL(`${API_BASE}/catalog/products`);
+export async function getProducts(categoryId?: number, storeLocationId?: number): Promise<Product[]> {
+  const params = new URLSearchParams();
   if (categoryId) {
-    url.searchParams.set("category_id", String(categoryId));
+    params.set("category_id", String(categoryId));
   }
+  if (storeLocationId) {
+    params.set("store_location_id", String(storeLocationId));
+  }
+  const query = params.toString();
+  const url = `${API_BASE}/catalog/products${query ? `?${query}` : ""}`;
 
-  const res = await fetch(url.toString(), {
-    next: { revalidate: 60 },
+  const res = await fetch(url, {
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -33,9 +41,21 @@ export async function getProducts(categoryId?: number): Promise<Product[]> {
   return data.products || data;
 }
 
+export async function getStoreLocations(): Promise<StoreLocation[]> {
+  const res = await fetch(`${API_BASE}/catalog/store_locations`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Не удалось загрузить точки");
+  }
+
+  return res.json();
+}
+
 export async function getProduct(productId: number): Promise<Product> {
   const res = await fetch(`${API_BASE}/catalog/products/${productId}`, {
-    next: { revalidate: 60 },
+    cache: "no-store",
   });
 
   if (!res.ok) {

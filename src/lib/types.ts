@@ -31,6 +31,10 @@ export interface Product {
   size_label: string | null;
   weight: string | null;  // "400 г" или "300 мл"
   calories: number | null;  // ккал
+  proteins: number | null;  // белки, г
+  fats: number | null;  // жиры, г
+  carbs: number | null;  // углеводы, г
+  ingredients: string | null;  // состав
   is_active: boolean;
   media: MediaItem[] | null;
   sort_order: number;

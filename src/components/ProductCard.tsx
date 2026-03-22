@@ -5,9 +5,10 @@ import { Product } from "@/lib/types";
 
 interface ProductCardProps {
   product: Product;
+  onClick?: () => void;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onClick }: ProductCardProps) {
   const mediaItem = product.media?.[0];
   // media может быть массивом строк или объектов с url
   const mediaUrl = typeof mediaItem === 'string' ? mediaItem : mediaItem?.url;
@@ -17,13 +18,7 @@ export function ProductCard({ product }: ProductCardProps) {
   let imageUrl = "/placeholder.svg";
   if (mediaUrl) {
     if (mediaUrl.startsWith('http')) {
-      // Заменяем ngrok URL на localhost для локальной разработки
-      if (mediaUrl.includes('ngrok')) {
-        const path = mediaUrl.replace(/^https?:\/\/[^/]+/, '');
-        imageUrl = `${MEDIA_URL}${path}`;
-      } else {
-        imageUrl = mediaUrl;
-      }
+      imageUrl = mediaUrl;
     } else {
       imageUrl = `${MEDIA_URL}${mediaUrl}`;
     }
@@ -31,9 +26,9 @@ export function ProductCard({ product }: ProductCardProps) {
   const price = parseFloat(product.base_price);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col cursor-pointer" onClick={onClick}>
       {/* Изображение на сером фоне */}
-      <div className="relative aspect-square bg-[#EAEAEA] rounded-[20px] overflow-hidden">
+      <div className="relative aspect-square bg-[#EAEAEA] rounded-[20px] overflow-hidden active:scale-[0.98] transition-transform">
         <Image
           src={imageUrl}
           alt={product.name}

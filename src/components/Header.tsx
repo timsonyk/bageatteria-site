@@ -1,10 +1,22 @@
-export function Header() {
+import Image from "next/image";
+
+interface HeaderProps {
+  rightElement?: React.ReactNode;
+}
+
+export function Header({ rightElement }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-20 bg-background border-b border-border">
-      <div className="flex items-center justify-center h-14 px-4">
-        <h1 className="text-xl font-bold text-foreground">
-          Bageatteria
-        </h1>
+    <header className="bg-background border-b border-border">
+      <div className="flex items-center justify-between h-14 px-4">
+        <Image
+          src="/logo.svg"
+          alt="Bageatteria"
+          width={140}
+          height={38}
+          className="object-contain"
+          priority
+        />
+        {rightElement}
       </div>
     </header>
   );
