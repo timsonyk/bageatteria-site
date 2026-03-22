@@ -220,6 +220,18 @@ def list_store_locations(db: Session = Depends(get_db)):
     return db.query(StoreLocation).filter(StoreLocation.is_active == True).order_by(StoreLocation.sort_order).all()
 
 
+@router.get("/store_locations/by-slug/{slug}")
+def get_store_location_by_slug(slug: str, db: Session = Depends(get_db)):
+    """Get store location by slug (for QR code links)."""
+    location = db.query(StoreLocation).filter(
+        StoreLocation.slug == slug,
+        StoreLocation.is_active == True
+    ).first()
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return location
+
+
 @router.get("/faqs")
 def list_faqs(db: Session = Depends(get_db)):
     """Get list of FAQs (public)."""

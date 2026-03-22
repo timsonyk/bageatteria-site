@@ -204,6 +204,7 @@ class StoreLocation(Base):
     __tablename__ = "store_locations"
 
     id = Column(Integer, primary_key=True)
+    slug = Column(String(50), unique=True, nullable=False)  # URL slug: "depo", "smolenskaya"
     name = Column(String(100), nullable=False, default="")  # Название точки (Депо, Смоленская)
     city = Column(String(100), nullable=False)
     address_text = Column(Text, nullable=False)

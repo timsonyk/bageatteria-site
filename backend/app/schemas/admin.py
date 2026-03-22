@@ -250,6 +250,7 @@ class PointsAdjustmentRequest(BaseModel):
 
 
 class StoreLocationCreate(BaseModel):
+    slug: str  # URL slug: "depo", "smolenskaya"
     name: Optional[str] = None  # Название точки - если не указано, берётся из адреса
     city: str
     address_text: str
@@ -262,6 +263,7 @@ class StoreLocationCreate(BaseModel):
 
 
 class StoreLocationUpdate(BaseModel):
+    slug: Optional[str] = None
     name: Optional[str] = None
     city: Optional[str] = None
     address_text: Optional[str] = None

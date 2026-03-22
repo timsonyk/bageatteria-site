@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 
 interface StoreLocation {
   id: number
+  slug: string
   name: string
   city: string
   address_text: string
@@ -90,6 +91,7 @@ export const StoreLocationsPage = () => {
 
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: 'Slug', dataIndex: 'slug', width: 120 },
     { title: 'Название', dataIndex: 'name', width: 150 },
     { title: 'Город', dataIndex: 'city', width: 120 },
     { title: 'Адрес', dataIndex: 'address_text' },
@@ -153,6 +155,18 @@ export const StoreLocationsPage = () => {
           onFinish={handleSubmit}
           initialValues={{ sort_order: 0, is_active: true }}
         >
+          <Form.Item
+            name="slug"
+            label="Slug (для URL)"
+            rules={[
+              { required: true, message: 'Введите slug' },
+              { pattern: /^[a-z0-9-]+$/, message: 'Только латиница, цифры и дефис' }
+            ]}
+            extra="Используется в QR-ссылках: /menu/slug"
+          >
+            <Input placeholder="depo" />
+          </Form.Item>
+
           <Form.Item name="name" label="Название" rules={[{ required: true, message: 'Введите название' }]}>
             <Input placeholder="Депо" />
           </Form.Item>
