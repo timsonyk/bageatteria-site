@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
 
@@ -10,6 +10,98 @@ interface ProductModalProps {
   product: Product | null;
   products: Product[];
   onProductChange: (product: Product) => void;
+}
+
+// Card component for a single product
+function ProductCard({
+  product,
+  getImageUrl,
+}: {
+  product: Product;
+  getImageUrl: (p: Product) => string;
+}) {
+  const imageUrl = getImageUrl(product);
+  const price = parseFloat(product.base_price);
+
+  return (
+    <div className="w-full flex-shrink-0">
+      {/* Product Image */}
+      <div className="relative aspect-square bg-[#EAEAEA] mx-4 rounded-[20px] overflow-hidden">
+        <Image
+          src={imageUrl}
+          alt={product.name}
+          fill
+          className="object-contain pointer-events-none select-none"
+          sizes="(max-width: 768px) 100vw, 50vw"
+          unoptimized
+          draggable={false}
+        />
+      </div>
+
+      {/* Product Info */}
+      <div className="px-4 py-4">
+        <h2 className="text-[22px] font-bold text-black">{product.name}</h2>
+
+        <div className="flex items-baseline gap-3 mt-2">
+          <span className="text-[20px] font-semibold text-black">
+            {price.toLocaleString("ru-RU")} ₽
+          </span>
+          {product.weight && (
+            <span className="text-[14px] text-[#8E8E93]">{product.weight}</span>
+          )}
+        </div>
+
+        {/* КБЖУ */}
+        {(product.calories || product.proteins || product.fats || product.carbs) && (
+          <div className="mt-4 pt-4 pb-4 border-t border-b border-gray-100">
+            <h3 className="text-[14px] font-semibold text-black mb-2">Пищевая ценность</h3>
+            <div className="grid grid-cols-4 gap-2">
+              {product.calories !== null && (
+                <div className="text-center">
+                  <div className="text-[16px] font-medium text-black">{product.calories}</div>
+                  <div className="text-[12px] text-[#8E8E93]">ккал</div>
+                </div>
+              )}
+              {product.proteins !== null && (
+                <div className="text-center">
+                  <div className="text-[16px] font-medium text-black">{product.proteins}</div>
+                  <div className="text-[12px] text-[#8E8E93]">белки</div>
+                </div>
+              )}
+              {product.fats !== null && (
+                <div className="text-center">
+                  <div className="text-[16px] font-medium text-black">{product.fats}</div>
+                  <div className="text-[12px] text-[#8E8E93]">жиры</div>
+                </div>
+              )}
+              {product.carbs !== null && (
+                <div className="text-center">
+                  <div className="text-[16px] font-medium text-black">{product.carbs}</div>
+                  <div className="text-[12px] text-[#8E8E93]">углеводы</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {product.description && (
+          <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
+            {product.description}
+          </p>
+        )}
+
+        {/* Состав */}
+        {product.ingredients && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <h3 className="text-[14px] font-semibold text-black mb-2">Состав</h3>
+            <p className="text-[14px] text-gray-600 leading-relaxed">
+              {product.ingredients}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ProductModal({
@@ -33,27 +125,71 @@ export function ProductModal({
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < products.length - 1;
 
+  // Get prev, current, next products for carousel
+  const carouselProducts = useMemo(() => {
+    if (currentIndex === -1) return [];
+    const items: { product: Product; position: number }[] = [];
+
+    if (hasPrev) {
+      items.push({ product: products[currentIndex - 1], position: -1 });
+    }
+    items.push({ product: products[currentIndex], position: 0 });
+    if (hasNext) {
+      items.push({ product: products[currentIndex + 1], position: 1 });
+    }
+
+    return items;
+  }, [currentIndex, hasPrev, hasNext, products]);
+
+  // Helper to get image URL from product
+  const getImageUrl = useCallback((p: Product): string => {
+    const mediaItem = p.media?.[0];
+    const mediaUrl = typeof mediaItem === "string" ? mediaItem : mediaItem?.url;
+    if (!mediaUrl) return "/placeholder.svg";
+    if (mediaUrl.startsWith("http")) return mediaUrl;
+    return `${MEDIA_URL}${mediaUrl}`;
+  }, [MEDIA_URL]);
+
+  // Preload adjacent images
+  useEffect(() => {
+    if (!isOpen || currentIndex === -1) return;
+
+    const preloadImage = (url: string) => {
+      const img = new window.Image();
+      img.src = url;
+    };
+
+    if (hasPrev) {
+      preloadImage(getImageUrl(products[currentIndex - 1]));
+    }
+    if (hasNext) {
+      preloadImage(getImageUrl(products[currentIndex + 1]));
+    }
+  }, [isOpen, currentIndex, hasPrev, hasNext, products, getImageUrl]);
+
   const goToPrev = useCallback(() => {
     if (currentIndex > 0 && !isTransitioning) {
       setIsTransitioning(true);
+      // Animate to show prev card
       setSwipeOffset(window.innerWidth);
       setTimeout(() => {
         onProductChange(products[currentIndex - 1]);
         setSwipeOffset(0);
         setIsTransitioning(false);
-      }, 200);
+      }, 250);
     }
   }, [currentIndex, products, onProductChange, isTransitioning]);
 
   const goToNext = useCallback(() => {
     if (currentIndex < products.length - 1 && !isTransitioning) {
       setIsTransitioning(true);
+      // Animate to show next card
       setSwipeOffset(-window.innerWidth);
       setTimeout(() => {
         onProductChange(products[currentIndex + 1]);
         setSwipeOffset(0);
         setIsTransitioning(false);
-      }, 200);
+      }, 250);
     }
   }, [currentIndex, products, onProductChange, isTransitioning]);
 
@@ -95,7 +231,7 @@ export function ProductModal({
     };
   }, [isOpen, onClose, goToPrev, goToNext]);
 
-  // Touch handlers for horizontal swipe
+  // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
     const touch = e.touches[0];
@@ -110,12 +246,10 @@ export function ProductModal({
     const diffX = touch.clientX - touchStart.x;
     const diffY = touch.clientY - touchStart.y;
 
-    // Determine direction on first move
     if (!swipeDirection && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
       setSwipeDirection(Math.abs(diffX) > Math.abs(diffY) ? "horizontal" : "vertical");
     }
 
-    // Handle horizontal swipe
     if (swipeDirection === "horizontal") {
       // Resistance at edges
       if ((diffX > 0 && !hasPrev) || (diffX < 0 && !hasNext)) {
@@ -134,12 +268,9 @@ export function ProductModal({
     }
 
     const offset = swipeOffset;
-
-    // Reset state
     setTouchStart(null);
     setSwipeDirection(null);
 
-    // Check if swipe is enough to navigate
     if (Math.abs(offset) > minSwipeDistance) {
       if (offset > 0 && hasPrev) {
         goToPrev();
@@ -150,24 +281,13 @@ export function ProductModal({
       }
     }
 
+    // Snap back
+    setIsTransitioning(true);
     setSwipeOffset(0);
+    setTimeout(() => setIsTransitioning(false), 250);
   };
 
   if (!isVisible || !product) return null;
-
-  // Image URL processing
-  const mediaItem = product.media?.[0];
-  const mediaUrl = typeof mediaItem === "string" ? mediaItem : mediaItem?.url;
-  let imageUrl = "/placeholder.svg";
-  if (mediaUrl) {
-    if (mediaUrl.startsWith("http")) {
-      imageUrl = mediaUrl;
-    } else {
-      imageUrl = `${MEDIA_URL}${mediaUrl}`;
-    }
-  }
-
-  const price = parseFloat(product.base_price);
 
   return (
     <div className="fixed inset-0 z-50">
@@ -179,7 +299,7 @@ export function ProductModal({
         onClick={onClose}
       />
 
-      {/* Navigation dots - above modal */}
+      {/* Navigation dots */}
       {products.length > 1 && products.length <= 20 && (
         <div
           className={`absolute left-0 right-0 flex justify-center gap-1.5 transition-all duration-300 ${
@@ -199,7 +319,7 @@ export function ProductModal({
         </div>
       )}
 
-      {/* Modal Sheet - Fixed height */}
+      {/* Modal Sheet */}
       <div
         className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] h-[91vh] overflow-hidden transform transition-transform duration-300 ease-out ${
           isAnimating ? "translate-y-0" : "translate-y-full"
@@ -230,99 +350,30 @@ export function ProductModal({
           </svg>
         </button>
 
-        {/* Swipeable Content */}
+        {/* Swipeable Carousel */}
         <div
-          className="h-[calc(91vh-40px)] overflow-y-auto overscroll-contain"
+          className="h-[calc(91vh-40px)] overflow-hidden"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
           <div
+            className="flex h-full"
             style={{
-              transform: `translateX(${swipeOffset}px)`,
-              transition: isTransitioning ? "transform 0.2s ease-out" : "none",
+              transform: `translateX(calc(-${hasPrev ? 100 : 0}% + ${swipeOffset}px))`,
+              transition: isTransitioning ? "transform 0.25s ease-out" : "none",
             }}
           >
-            {/* Product Image */}
-            <div className="relative aspect-square bg-[#EAEAEA] mx-4 rounded-[20px] overflow-hidden">
-              <Image
-                src={imageUrl}
-                alt={product.name}
-                fill
-                className="object-contain pointer-events-none select-none"
-                sizes="(max-width: 768px) 100vw, 50vw"
-                unoptimized
-                draggable={false}
-              />
-            </div>
-
-            {/* Product Info */}
-            <div className="px-4 py-4">
-              <h2 className="text-[22px] font-bold text-black">{product.name}</h2>
-
-              <div className="flex items-baseline gap-3 mt-2">
-                <span className="text-[20px] font-semibold text-black">
-                  {price.toLocaleString("ru-RU")} ₽
-                </span>
-                {product.weight && (
-                  <span className="text-[14px] text-[#8E8E93]">
-                    {product.weight}
-                  </span>
-                )}
+            {carouselProducts.map(({ product: p, position }) => (
+              <div
+                key={p.id}
+                className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
+              >
+                <ProductCard product={p} getImageUrl={getImageUrl} />
               </div>
-
-              {/* КБЖУ */}
-              {(product.calories || product.proteins || product.fats || product.carbs) && (
-                <div className="mt-4 pt-4 pb-4 border-t border-b border-gray-100">
-                  <h3 className="text-[14px] font-semibold text-black mb-2">Пищевая ценность</h3>
-                  <div className="grid grid-cols-4 gap-2">
-                    {product.calories !== null && (
-                      <div className="text-center">
-                        <div className="text-[16px] font-medium text-black">{product.calories}</div>
-                        <div className="text-[12px] text-[#8E8E93]">ккал</div>
-                      </div>
-                    )}
-                    {product.proteins !== null && (
-                      <div className="text-center">
-                        <div className="text-[16px] font-medium text-black">{product.proteins}</div>
-                        <div className="text-[12px] text-[#8E8E93]">белки</div>
-                      </div>
-                    )}
-                    {product.fats !== null && (
-                      <div className="text-center">
-                        <div className="text-[16px] font-medium text-black">{product.fats}</div>
-                        <div className="text-[12px] text-[#8E8E93]">жиры</div>
-                      </div>
-                    )}
-                    {product.carbs !== null && (
-                      <div className="text-center">
-                        <div className="text-[16px] font-medium text-black">{product.carbs}</div>
-                        <div className="text-[12px] text-[#8E8E93]">углеводы</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {product.description && (
-                <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
-                  {product.description}
-                </p>
-              )}
-
-              {/* Состав */}
-              {product.ingredients && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <h3 className="text-[14px] font-semibold text-black mb-2">Состав</h3>
-                  <p className="text-[14px] text-gray-600 leading-relaxed">
-                    {product.ingredients}
-                  </p>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         </div>
-
       </div>
     </div>
   );

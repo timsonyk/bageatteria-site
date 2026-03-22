@@ -53,6 +53,22 @@ export async function getStoreLocations(): Promise<StoreLocation[]> {
   return res.json();
 }
 
+export async function getStoreLocationBySlug(slug: string): Promise<StoreLocation | null> {
+  const res = await fetch(`${API_BASE}/catalog/store_locations/by-slug/${slug}`, {
+    cache: "no-store",
+  });
+
+  if (res.status === 404) {
+    return null;
+  }
+
+  if (!res.ok) {
+    throw new Error("Не удалось загрузить точку");
+  }
+
+  return res.json();
+}
+
 export async function getProduct(productId: number): Promise<Product> {
   const res = await fetch(`${API_BASE}/catalog/products/${productId}`, {
     cache: "no-store",

@@ -44,6 +44,7 @@ export interface Product {
 // Точка (магазин)
 export interface StoreLocation {
   id: number;
+  slug: string;
   name: string;
   city: string;
   address_text: string;

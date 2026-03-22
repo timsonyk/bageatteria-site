@@ -8,15 +8,33 @@ import { getStoreLocations } from "@/lib/api";
 const STORAGE_KEY = "selected_store_location";
 
 interface LocationSelectorProps {
-  onLocationChange: (locationId: number | null) => void;
+  // For /menu (without slug) - legacy mode
+  onLocationChange?: (locationId: number | null) => void;
+  // For /menu/[slug] - URL-based mode
+  initialLocation?: StoreLocation | null;
+  onLocationSelect?: (location: StoreLocation) => void;
 }
 
-export function LocationSelector({ onLocationChange }: LocationSelectorProps) {
+export function LocationSelector({
+  onLocationChange,
+  initialLocation,
+  onLocationSelect,
+}: LocationSelectorProps) {
   const [locations, setLocations] = useState<StoreLocation[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<StoreLocation | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<StoreLocation | null>(
+    initialLocation || null
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [isInitialModalOpen, setIsInitialModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isUrlMode = !!onLocationSelect;
+
+  // Update selected location when initialLocation changes (URL mode)
+  useEffect(() => {
+    if (initialLocation) {
+      setSelectedLocation(initialLocation);
+    }
+  }, [initialLocation]);
 
   // Load locations and check for saved selection
   useEffect(() => {
@@ -25,13 +43,16 @@ export function LocationSelector({ onLocationChange }: LocationSelectorProps) {
         const data = await getStoreLocations();
         setLocations(data);
 
-        // Check for saved location
+        // In URL mode, don't auto-select from localStorage
+        if (isUrlMode) return;
+
+        // Check for saved location (legacy mode)
         const savedId = localStorage.getItem(STORAGE_KEY);
         if (savedId) {
           const saved = data.find((l) => l.id === parseInt(savedId));
           if (saved) {
             setSelectedLocation(saved);
-            onLocationChange(saved.id);
+            onLocationChange?.(saved.id);
             return;
           }
         }
@@ -43,7 +64,7 @@ export function LocationSelector({ onLocationChange }: LocationSelectorProps) {
       }
     }
     loadLocations();
-  }, [onLocationChange]);
+  }, [onLocationChange, isUrlMode]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -62,7 +83,15 @@ export function LocationSelector({ onLocationChange }: LocationSelectorProps) {
   const handleSelect = (location: StoreLocation) => {
     setSelectedLocation(location);
     localStorage.setItem(STORAGE_KEY, String(location.id));
-    onLocationChange(location.id);
+
+    if (isUrlMode) {
+      // URL mode - navigate to new slug
+      onLocationSelect?.(location);
+    } else {
+      // Legacy mode - just update ID
+      onLocationChange?.(location.id);
+    }
+
     setIsOpen(false);
     setIsInitialModalOpen(false);
   };
@@ -141,17 +170,19 @@ export function LocationSelector({ onLocationChange }: LocationSelectorProps) {
         )}
       </div>
 
-      {/* Initial Selection Modal (can't be closed without selection) */}
-      <BottomSheet
-        isOpen={isInitialModalOpen && !selectedLocation}
-        onClose={() => {}}
-        title="Выберите точку"
-      >
-        <div className="px-4 py-2 text-sm text-gray-500 text-center">
-          Для просмотра меню выберите точку
-        </div>
-        <LocationList />
-      </BottomSheet>
+      {/* Initial Selection Modal (can't be closed without selection) - only in legacy mode */}
+      {!isUrlMode && (
+        <BottomSheet
+          isOpen={isInitialModalOpen && !selectedLocation}
+          onClose={() => {}}
+          title="Выберите точку"
+        >
+          <div className="px-4 py-2 text-sm text-gray-500 text-center">
+            Для просмотра меню выберите точку
+          </div>
+          <LocationList />
+        </BottomSheet>
+      )}
     </>
   );
 }
