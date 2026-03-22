@@ -29,6 +29,10 @@ class ProductCreate(BaseModel):
     size_label: Optional[str] = None
     weight: Optional[str] = None  # "400 г" или "300 мл"
     calories: Optional[int] = None  # ккал
+    proteins: Optional[float] = None  # белки, г
+    fats: Optional[float] = None  # жиры, г
+    carbs: Optional[float] = None  # углеводы, г
+    ingredients: Optional[str] = None  # состав
     sort_order: int = 0
     is_active: bool = True
     media: Optional[list] = None
@@ -42,6 +46,10 @@ class ProductUpdate(BaseModel):
     size_label: Optional[str] = None
     weight: Optional[str] = None
     calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
+    ingredients: Optional[str] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
     media: Optional[list] = None
@@ -279,5 +287,16 @@ class CategoryRecommendationsBulkUpdate(BaseModel):
     """Update all recommendations for a category at once"""
     category_id: int
     product_ids: List[int]  # List of product IDs in order
+
+
+class ProductAvailabilityCreate(BaseModel):
+    product_id: int
+    store_location_id: int
+
+
+class ProductAvailabilityBulkUpdate(BaseModel):
+    """Update all store availability for a product at once"""
+    product_id: int
+    store_location_ids: List[int]  # List of store location IDs where product is available
 
 

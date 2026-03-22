@@ -61,6 +61,10 @@ class ProductOut(BaseModel):
     size_label: Optional[str] = None
     weight: Optional[str] = None
     calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
+    ingredients: Optional[str] = None
     is_active: bool
     media: Optional[list] = None
     sort_order: int

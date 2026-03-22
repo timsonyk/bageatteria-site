@@ -819,17 +819,8 @@ async def upload_file(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # Build a public URL - prefer ngrok/forwarded headers, fallback to BASE_URL
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-
-    if forwarded_host:
-        # Request came through ngrok or reverse proxy
-        scheme = forwarded_proto or "https"
-        base = f"{scheme}://{forwarded_host}".rstrip("/")
-    else:
-        # Use BASE_URL from settings (should be ngrok URL in production)
-        base = str(settings.base_url).rstrip("/")
+    # Build a public URL using BASE_URL from settings
+    base = str(settings.base_url).rstrip("/")
 
     url = f"{base}/uploads/{filename}"
     return {"url": url, "filename": filename}
@@ -1048,5 +1039,94 @@ def bulk_update_recommendations(
     ).filter(
         cat_models.CategoryRecommendation.category_id == payload.category_id
     ).order_by(cat_models.CategoryRecommendation.sort_order).all()
+
+
+# -------- Product Store Availability --------
+@router.get("/product_availability")
+def list_product_availability(
+    product_id: Optional[int] = None,
+    store_location_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Get product availability records, optionally filtered"""
+    q = db.query(cat_models.ProductStoreAvailability).options(
+        joinedload(cat_models.ProductStoreAvailability.product),
+        joinedload(cat_models.ProductStoreAvailability.store_location),
+    )
+    if product_id:
+        q = q.filter(cat_models.ProductStoreAvailability.product_id == product_id)
+    if store_location_id:
+        q = q.filter(cat_models.ProductStoreAvailability.store_location_id == store_location_id)
+    return q.all()
+
+
+@router.post("/product_availability")
+def create_product_availability(
+    payload: admin_schemas.ProductAvailabilityCreate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Add product availability at a store"""
+    # Check if already exists
+    existing = db.query(cat_models.ProductStoreAvailability).filter(
+        cat_models.ProductStoreAvailability.product_id == payload.product_id,
+        cat_models.ProductStoreAvailability.store_location_id == payload.store_location_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Availability already exists")
+
+    obj = cat_models.ProductStoreAvailability(**payload.model_dump())
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.delete("/product_availability/{availability_id}")
+def delete_product_availability(
+    availability_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Remove product availability at a store"""
+    obj = db.query(cat_models.ProductStoreAvailability).filter(
+        cat_models.ProductStoreAvailability.id == availability_id
+    ).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Availability not found")
+    db.delete(obj)
+    db.commit()
+    return {"deleted": True}
+
+
+@router.post("/product_availability/bulk")
+def bulk_update_product_availability(
+    payload: admin_schemas.ProductAvailabilityBulkUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Replace all store availability for a product"""
+    # Delete existing availability for this product
+    db.query(cat_models.ProductStoreAvailability).filter(
+        cat_models.ProductStoreAvailability.product_id == payload.product_id
+    ).delete()
+
+    # Create new availability records
+    for store_id in payload.store_location_ids:
+        obj = cat_models.ProductStoreAvailability(
+            product_id=payload.product_id,
+            store_location_id=store_id,
+        )
+        db.add(obj)
+
+    db.commit()
+
+    # Return newly created records
+    return db.query(cat_models.ProductStoreAvailability).options(
+        joinedload(cat_models.ProductStoreAvailability.store_location),
+    ).filter(
+        cat_models.ProductStoreAvailability.product_id == payload.product_id
+    ).all()
 
 

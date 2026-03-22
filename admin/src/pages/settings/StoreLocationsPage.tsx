@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 
 interface StoreLocation {
   id: number
+  name: string
   city: string
   address_text: string
   lat: number | null
@@ -89,6 +90,7 @@ export const StoreLocationsPage = () => {
 
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: 'Название', dataIndex: 'name', width: 150 },
     { title: 'Город', dataIndex: 'city', width: 120 },
     { title: 'Адрес', dataIndex: 'address_text' },
     { title: 'Телефон', dataIndex: 'phone', width: 150 },
@@ -151,6 +153,10 @@ export const StoreLocationsPage = () => {
           onFinish={handleSubmit}
           initialValues={{ sort_order: 0, is_active: true }}
         >
+          <Form.Item name="name" label="Название" rules={[{ required: true, message: 'Введите название' }]}>
+            <Input placeholder="Депо" />
+          </Form.Item>
+
           <Form.Item name="city" label="Город" rules={[{ required: true, message: 'Введите город' }]}>
             <Input placeholder="Москва" />
           </Form.Item>

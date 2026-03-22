@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db
-from app.models.catalog import Banner, Category, Product, ModificationGroup, DeliveryZone, StoreLocation, FAQ, CategoryRecommendation
+from app.models.catalog import Banner, Category, Product, ModificationGroup, DeliveryZone, StoreLocation, FAQ, CategoryRecommendation, ProductStoreAvailability
 from app.schemas.catalog import BannerOut, CategoryOut, ProductOut
 from app.services.pricing import _find_delivery_zone, _point_in_polygon
 
@@ -116,6 +116,7 @@ def _normalize_product_media(product: ProductOut, base: str) -> ProductOut:
 def list_products(
     request: Request,
     category_id: int | None = Query(None),
+    store_location_id: int | None = Query(None),
     active_only: bool = True,
     db: Session = Depends(get_db),
 ):
@@ -127,6 +128,14 @@ def list_products(
         query = query.filter(Product.category_id == category_id)
     if active_only:
         query = query.filter(Product.is_active == True)  # noqa: E712
+
+    # Filter by store location if specified
+    if store_location_id:
+        available_product_ids = db.query(ProductStoreAvailability.product_id).filter(
+            ProductStoreAvailability.store_location_id == store_location_id
+        ).subquery()
+        query = query.filter(Product.id.in_(available_product_ids))
+
     products = query.order_by(Product.sort_order).all()
 
     # Normalize URLs

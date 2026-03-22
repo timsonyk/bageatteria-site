@@ -52,6 +52,10 @@ class Product(Base):
     size_label = Column(String(10), nullable=True)  # fallback when no sizes table
     weight = Column(String(50), nullable=True)  # "400 г" или "300 мл"
     calories = Column(Integer, nullable=True)  # ккал
+    proteins = Column(Float, nullable=True)  # белки, г
+    fats = Column(Float, nullable=True)  # жиры, г
+    carbs = Column(Float, nullable=True)  # углеводы, г
+    ingredients = Column(Text, nullable=True)  # состав
     is_active = Column(Boolean, default=True, nullable=False)
     media = Column(JSON, nullable=True)
     sort_order = Column(Integer, default=0, nullable=False)
@@ -222,3 +226,15 @@ class CategoryRecommendation(Base):
 
     category = relationship("Category", backref=backref("recommendations", cascade="all, delete-orphan"))
     product = relationship("Product")
+
+
+class ProductStoreAvailability(Base):
+    """Many-to-many relationship between products and store locations"""
+    __tablename__ = "product_store_availability"
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    store_location_id = Column(Integer, ForeignKey("store_locations.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    product = relationship("Product", backref=backref("store_availabilities", cascade="all, delete-orphan"))
+    store_location = relationship("StoreLocation", backref=backref("product_availabilities", cascade="all, delete-orphan"))

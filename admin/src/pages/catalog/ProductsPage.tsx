@@ -24,6 +24,9 @@ const fetchProducts = async () => (await api.get('/admin/products')).data
 const fetchCategories = async () => (await api.get('/admin/categories')).data
 const fetchSizes = async (productId?: number) =>
   (await api.get('/admin/product_sizes', { params: productId ? { product_id: productId } : {} })).data
+const fetchStoreLocations = async () => (await api.get('/admin/store_locations')).data
+const fetchProductAvailability = async (productId: number) =>
+  (await api.get('/admin/product_availability', { params: { product_id: productId } })).data
 
 export const ProductsPage = () => {
   const qc = useQueryClient()
@@ -49,6 +52,17 @@ export const ProductsPage = () => {
     enabled: !!currentProductId,
   })
   const [sizeForm] = Form.useForm()
+
+  // Store availability
+  const [availabilityOpen, setAvailabilityOpen] = useState(false)
+  const [availabilityProductId, setAvailabilityProductId] = useState<number | null>(null)
+  const { data: storeLocations } = useQuery({ queryKey: ['store_locations'], queryFn: fetchStoreLocations })
+  const availabilityQuery = useQuery({
+    queryKey: ['product_availability', availabilityProductId],
+    queryFn: () => fetchProductAvailability(availabilityProductId!),
+    enabled: !!availabilityProductId,
+  })
+  const [selectedStores, setSelectedStores] = useState<number[]>([])
 
   const saveProduct = useMutation({
     mutationFn: async (values: any) => {
@@ -85,6 +99,19 @@ export const ProductsPage = () => {
   const deleteProduct = useMutation({
     mutationFn: async (id: number) => api.delete(`/admin/products/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['products'] }),
+  })
+
+  const saveAvailability = useMutation({
+    mutationFn: async (payload: { product_id: number; store_location_ids: number[] }) =>
+      api.post('/admin/product_availability/bulk', payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['product_availability', availabilityProductId] })
+      message.success('Доступность сохранена')
+      setAvailabilityOpen(false)
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Не удалось сохранить доступность')
+    },
   })
 
   const bulkUpdatePrices = useMutation({
@@ -166,6 +193,15 @@ export const ProductsPage = () => {
             >
               Размеры
             </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                setAvailabilityProductId(record.id)
+                setAvailabilityOpen(true)
+              }}
+            >
+              Точки
+            </Button>
             <Button danger size="small" onClick={() => deleteProduct.mutate(record.id)}>
               Удалить
             </Button>
@@ -216,6 +252,20 @@ export const ProductsPage = () => {
       sizeForm.resetFields()
     }
   }, [sizesOpen, sizeForm])
+
+  // Load selected stores when opening availability drawer
+  useEffect(() => {
+    if (availabilityOpen && availabilityQuery.data) {
+      setSelectedStores(availabilityQuery.data.map((a: any) => a.store_location_id))
+    }
+  }, [availabilityOpen, availabilityQuery.data])
+
+  useEffect(() => {
+    if (!availabilityOpen) {
+      setAvailabilityProductId(null)
+      setSelectedStores([])
+    }
+  }, [availabilityOpen])
 
   return (
     <>
@@ -350,6 +400,20 @@ export const ProductsPage = () => {
               <InputNumber style={{ width: '100%' }} min={0} placeholder="713" />
             </Form.Item>
           </Space>
+          <Space style={{ width: '100%' }}>
+            <Form.Item name="proteins" label="Белки (г)" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="12.5" />
+            </Form.Item>
+            <Form.Item name="fats" label="Жиры (г)" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="8.3" />
+            </Form.Item>
+            <Form.Item name="carbs" label="Углеводы (г)" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="45.2" />
+            </Form.Item>
+          </Space>
+          <Form.Item name="ingredients" label="Состав">
+            <Input.TextArea rows={2} placeholder="Мука, сахар, молоко, яйца..." />
+          </Form.Item>
           <Form.Item label="Изображения">
             <Upload.Dragger
               name="file"
@@ -433,6 +497,70 @@ export const ProductsPage = () => {
           rowKey="id"
           size="small"
         />
+      </Drawer>
+
+      <Drawer
+        title="Доступность на точках"
+        open={availabilityOpen}
+        onClose={() => setAvailabilityOpen(false)}
+        destroyOnHidden
+        extra={
+          <Button
+            type="primary"
+            loading={saveAvailability.isPending}
+            onClick={() => {
+              if (availabilityProductId) {
+                saveAvailability.mutate({
+                  product_id: availabilityProductId,
+                  store_location_ids: selectedStores,
+                })
+              }
+            }}
+          >
+            Сохранить
+          </Button>
+        }
+      >
+        {availabilityQuery.isLoading ? (
+          <Typography.Text>Загрузка...</Typography.Text>
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Typography.Text type="secondary">
+              Выберите точки, на которых доступен товар:
+            </Typography.Text>
+            {(storeLocations || []).map((store: any) => (
+              <div
+                key={store.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 6,
+                }}
+              >
+                <div>
+                  <Typography.Text strong>{store.name}</Typography.Text>
+                  <br />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {store.address_text}
+                  </Typography.Text>
+                </div>
+                <Switch
+                  checked={selectedStores.includes(store.id)}
+                  onChange={(checked) => {
+                    if (checked) {
+                      setSelectedStores([...selectedStores, store.id])
+                    } else {
+                      setSelectedStores(selectedStores.filter((id) => id !== store.id))
+                    }
+                  }}
+                />
+              </div>
+            ))}
+          </Space>
+        )}
       </Drawer>
     </>
   )
