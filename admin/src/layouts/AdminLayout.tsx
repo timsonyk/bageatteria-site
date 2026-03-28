@@ -1,6 +1,7 @@
 import { Layout, Menu, Typography, Button, Space, theme } from 'antd'
 import {
   ShopOutlined,
+  TagsOutlined,
   SettingOutlined,
   SunOutlined,
   MoonOutlined,
@@ -14,9 +15,9 @@ const { Header, Sider, Content } = Layout
 const menuItems = [
   // { key: '/', icon: <AppstoreOutlined />, label: <Link to="/">Главная</Link> },
   { key: '/catalog/categories', icon: <ShopOutlined />, label: <Link to="/catalog/categories">Категории</Link> },
-  { key: '/catalog/products', label: <Link to="/catalog/products">Товары</Link> },
-  { key: '/catalog/modifications', label: <Link to="/catalog/modifications">Модификации</Link> },
-  { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации</Link> },
+  { key: '/catalog/products', icon: <TagsOutlined />, label: <Link to="/catalog/products">Товары</Link> },
+  // { key: '/catalog/modifications', label: <Link to="/catalog/modifications">Модификации</Link> },
+  // { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации</Link> },
   { key: '/settings/store-locations', icon: <SettingOutlined />, label: <Link to="/settings/store-locations">Адреса магазинов</Link> },
   // {
   //   key: '/stock',
