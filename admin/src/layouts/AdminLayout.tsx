@@ -1,16 +1,9 @@
 import { Layout, Menu, Typography, Button, Space, theme } from 'antd'
 import {
-  AppstoreOutlined,
   ShopOutlined,
-  GiftOutlined,
-  ShoppingCartOutlined,
   SettingOutlined,
-  DeploymentUnitOutlined,
-  UserOutlined,
-  BellOutlined,
   SunOutlined,
   MoonOutlined,
-  InboxOutlined,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLogout } from '../hooks/useAuth'
@@ -19,69 +12,61 @@ import { useTheme } from '../contexts/ThemeContext'
 const { Header, Sider, Content } = Layout
 
 const menuItems = [
-  { key: '/', icon: <AppstoreOutlined />, label: <Link to="/">Главная</Link> },
-  {
-    key: '/catalog',
-    icon: <ShopOutlined />,
-    label: 'Каталог',
-    children: [
-      { key: '/catalog/categories', label: <Link to="/catalog/categories">Категории</Link> },
-      { key: '/catalog/products', label: <Link to="/catalog/products">Товары</Link> },
-      { key: '/catalog/modifications', label: <Link to="/catalog/modifications">Модификации</Link> },
-      { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации</Link> },
-    ],
-  },
-  {
-    key: '/stock',
-    icon: <InboxOutlined />,
-    label: 'Остатки',
-    children: [
-      { key: '/stock', label: <Link to="/stock">Дашборд</Link> },
-      { key: '/stock/deliveries', label: <Link to="/stock/deliveries">Приёмки</Link> },
-      { key: '/stock/inventories', label: <Link to="/stock/inventories">Инвентаризации</Link> },
-      { key: '/stock/items', label: <Link to="/stock/items">Номенклатура</Link> },
-      { key: '/stock/movements', label: <Link to="/stock/movements">История</Link> },
-    ],
-  },
-  {
-    key: '/customers',
-    icon: <UserOutlined />,
-    label: <Link to="/customers">Клиенты</Link>,
-  },
-  {
-    key: '/orders',
-    icon: <ShoppingCartOutlined />,
-    label: <Link to="/orders">Заказы</Link>,
-  },
-  {
-    key: '/marketing',
-    icon: <GiftOutlined />,
-    label: 'Маркетинг',
-    children: [
-      { key: '/marketing/banners', label: <Link to="/marketing/banners">Баннеры</Link> },
-      { key: '/marketing/promo-codes', label: <Link to="/marketing/promo-codes">Промокоды</Link> },
-      { key: '/marketing/notifications', icon: <BellOutlined />, label: <Link to="/marketing/notifications">Push-уведомления</Link> },
-    ],
-  },
-  {
-    key: '/delivery',
-    icon: <DeploymentUnitOutlined />,
-    label: 'Доставка',
-    children: [
-      { key: '/delivery/pickups', label: <Link to="/delivery/pickups">Самовывоз</Link> },
-      { key: '/delivery/zones', label: <Link to="/delivery/zones">Зоны</Link> },
-    ],
-  },
-  {
-    key: '/settings',
-    icon: <SettingOutlined />,
-    label: 'Настройки',
-    children: [
-      { key: '/settings/texts', label: <Link to="/settings/texts">Тексты</Link> },
-      { key: '/settings/loyalty', label: <Link to="/settings/loyalty">Лояльность</Link> },
-      { key: '/settings/store-locations', label: <Link to="/settings/store-locations">Адреса магазинов</Link> },
-    ],
-  },
+  // { key: '/', icon: <AppstoreOutlined />, label: <Link to="/">Главная</Link> },
+  { key: '/catalog/categories', icon: <ShopOutlined />, label: <Link to="/catalog/categories">Категории</Link> },
+  { key: '/catalog/products', label: <Link to="/catalog/products">Товары</Link> },
+  { key: '/catalog/modifications', label: <Link to="/catalog/modifications">Модификации</Link> },
+  { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации</Link> },
+  { key: '/settings/store-locations', icon: <SettingOutlined />, label: <Link to="/settings/store-locations">Адреса магазинов</Link> },
+  // {
+  //   key: '/stock',
+  //   icon: <InboxOutlined />,
+  //   label: 'Остатки',
+  //   children: [
+  //     { key: '/stock', label: <Link to="/stock">Дашборд</Link> },
+  //     { key: '/stock/deliveries', label: <Link to="/stock/deliveries">Приёмки</Link> },
+  //     { key: '/stock/inventories', label: <Link to="/stock/inventories">Инвентаризации</Link> },
+  //     { key: '/stock/items', label: <Link to="/stock/items">Номенклатура</Link> },
+  //     { key: '/stock/movements', label: <Link to="/stock/movements">История</Link> },
+  //   ],
+  // },
+  // {
+  //   key: '/customers',
+  //   icon: <UserOutlined />,
+  //   label: <Link to="/customers">Клиенты</Link>,
+  // },
+  // {
+  //   key: '/orders',
+  //   icon: <ShoppingCartOutlined />,
+  //   label: <Link to="/orders">Заказы</Link>,
+  // },
+  // {
+  //   key: '/marketing',
+  //   icon: <GiftOutlined />,
+  //   label: 'Маркетинг',
+  //   children: [
+  //     { key: '/marketing/banners', label: <Link to="/marketing/banners">Баннеры</Link> },
+  //     { key: '/marketing/promo-codes', label: <Link to="/marketing/promo-codes">Промокоды</Link> },
+  //     { key: '/marketing/notifications', icon: <BellOutlined />, label: <Link to="/marketing/notifications">Push-уведомления</Link> },
+  //   ],
+  // },
+  // {
+  //   key: '/delivery',
+  //   icon: <DeploymentUnitOutlined />,
+  //   label: 'Доставка',
+  //   children: [
+  //     { key: '/delivery/pickups', label: <Link to="/delivery/pickups">Самовывоз</Link> },
+  //     { key: '/delivery/zones', label: <Link to="/delivery/zones">Зоны</Link> },
+  //   ],
+  // },
+  // {
+  //   key: '/settings/texts',
+  //   label: <Link to="/settings/texts">Тексты</Link>,
+  // },
+  // {
+  //   key: '/settings/loyalty',
+  //   label: <Link to="/settings/loyalty">Лояльность</Link>,
+  // },
 ]
 
 export const AdminLayout = () => {
