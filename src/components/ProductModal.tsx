@@ -85,7 +85,7 @@ function ProductCard({
         )}
 
         {product.description && (
-          <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
+          <p className="text-[15px] text-gray-600 mt-3 leading-relaxed whitespace-pre-line">
             {product.description}
           </p>
         )}
@@ -94,7 +94,7 @@ function ProductCard({
         {product.ingredients && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <h3 className="text-[14px] font-semibold text-black mb-2">Состав</h3>
-            <p className="text-[14px] text-gray-600 leading-relaxed">
+            <p className="text-[14px] text-gray-600 leading-relaxed whitespace-pre-line">
               {product.ingredients}
             </p>
           </div>
@@ -114,6 +114,7 @@ export function ProductModal({
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
+  const [verticalOffset, setVerticalOffset] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<"horizontal" | "vertical" | null>(null);
@@ -197,16 +198,18 @@ export function ProductModal({
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      });
+      setIsAnimating(false);
+      // Force browser to paint the initial state before animating
+      const timer = setTimeout(() => {
+        setIsAnimating(true);
+      }, 10);
+      return () => clearTimeout(timer);
     } else {
       setIsAnimating(false);
       const timer = setTimeout(() => {
         setIsVisible(false);
         setSwipeOffset(0);
+        setVerticalOffset(0);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -257,6 +260,14 @@ export function ProductModal({
       } else {
         setSwipeOffset(diffX);
       }
+    } else if (swipeDirection === "vertical") {
+      // Only allow swiping down (positive diffY)
+      if (diffY > 0) {
+        setVerticalOffset(diffY);
+      } else {
+        // Resistance when swiping up
+        setVerticalOffset(diffY * 0.1);
+      }
     }
   };
 
@@ -267,15 +278,34 @@ export function ProductModal({
       return;
     }
 
-    const offset = swipeOffset;
+    const hOffset = swipeOffset;
+    const vOffset = verticalOffset;
+    const direction = swipeDirection;
     setTouchStart(null);
     setSwipeDirection(null);
 
-    if (Math.abs(offset) > minSwipeDistance) {
-      if (offset > 0 && hasPrev) {
+    // Handle vertical swipe (close on swipe down)
+    if (direction === "vertical") {
+      if (vOffset > 100) {
+        // Close the modal
+        onClose();
+        setVerticalOffset(0);
+        return;
+      } else {
+        // Snap back
+        setIsTransitioning(true);
+        setVerticalOffset(0);
+        setTimeout(() => setIsTransitioning(false), 250);
+        return;
+      }
+    }
+
+    // Handle horizontal swipe (navigate between products)
+    if (Math.abs(hOffset) > minSwipeDistance) {
+      if (hOffset > 0 && hasPrev) {
         goToPrev();
         return;
-      } else if (offset < 0 && hasNext) {
+      } else if (hOffset < 0 && hasNext) {
         goToNext();
         return;
       }
@@ -293,40 +323,110 @@ export function ProductModal({
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black transition-opacity duration-300 ${
-          isAnimating ? "opacity-50" : "opacity-0"
-        }`}
+        className="absolute inset-0 bg-black"
+        style={{
+          opacity: isAnimating ? Math.max(0, 0.5 - verticalOffset / 400) : 0,
+          transition: (isTransitioning || !isAnimating || verticalOffset === 0)
+            ? "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)"
+            : "none",
+        }}
         onClick={onClose}
       />
 
       {/* Navigation dots */}
-      {products.length > 1 && products.length <= 20 && (
+      {products.length > 1 && (
         <div
-          className={`absolute left-0 right-0 flex justify-center gap-1.5 transition-all duration-300 ${
-            isAnimating ? "bottom-[91vh]" : "bottom-0 opacity-0"
-          }`}
-          style={{ marginBottom: "12px" }}
+          className="absolute left-0 right-0 flex justify-center"
+          style={{
+            bottom: isAnimating ? "91vh" : 0,
+            opacity: isAnimating ? 1 : 0,
+            marginBottom: "12px",
+            transition: "bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+          }}
         >
-          {products.map((p, i) => (
-            <button
-              key={p.id}
-              onClick={() => onProductChange(p)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                i === currentIndex ? "bg-white" : "bg-white/40"
-              }`}
-            />
-          ))}
+          <div className="flex items-center gap-1.5">
+            {(() => {
+              const total = products.length;
+              const maxDots = 11;
+
+              if (total <= maxDots) {
+                // Показываем все точки если их мало
+                return products.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`rounded-full transition-all duration-200 ${
+                      i === currentIndex
+                        ? "w-2.5 h-2.5 bg-white"
+                        : "w-2 h-2 bg-white/40"
+                    }`}
+                  />
+                ));
+              }
+
+              // Для большого количества - скользящее окно
+              const dots: React.ReactNode[] = [];
+              const sideCount = Math.floor((maxDots - 1) / 2); // точек с каждой стороны от текущей
+
+              let start = currentIndex - sideCount;
+              let end = currentIndex + sideCount;
+
+              // Корректируем границы
+              if (start < 0) {
+                end -= start;
+                start = 0;
+              }
+              if (end >= total) {
+                start -= (end - total + 1);
+                end = total - 1;
+              }
+              start = Math.max(0, start);
+
+              for (let i = start; i <= end; i++) {
+                const distanceFromEdge = Math.min(i - start, end - i);
+
+                // Уменьшаем крайние точки
+                let sizeClass = "w-2 h-2";
+                if (i === currentIndex) {
+                  sizeClass = "w-2.5 h-2.5";
+                } else if (distanceFromEdge === 0 && (start > 0 || end < total - 1)) {
+                  sizeClass = "w-1.5 h-1.5";
+                }
+
+                dots.push(
+                  <span
+                    key={i}
+                    className={`rounded-full transition-all duration-200 ${sizeClass} ${
+                      i === currentIndex ? "bg-white" : "bg-white/40"
+                    }`}
+                  />
+                );
+              }
+
+              return dots;
+            })()}
+          </div>
         </div>
       )}
 
       {/* Modal Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] h-[91vh] overflow-hidden transform transition-transform duration-300 ease-out ${
-          isAnimating ? "translate-y-0" : "translate-y-full"
-        }`}
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] h-[91vh] overflow-hidden transform"
+        style={{
+          transform: isAnimating
+            ? `translateY(${verticalOffset}px)`
+            : "translateY(100%)",
+          transition: (isTransitioning || !isAnimating || verticalOffset === 0)
+            ? "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)"
+            : "none",
+        }}
       >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2">
+        {/* Handle - draggable area */}
+        <div
+          className="flex justify-center pt-3 pb-4 cursor-grab active:cursor-grabbing touch-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
         </div>
 
@@ -364,7 +464,7 @@ export function ProductModal({
               transition: isTransitioning ? "transform 0.25s ease-out" : "none",
             }}
           >
-            {carouselProducts.map(({ product: p, position }) => (
+            {carouselProducts.map(({ product: p }) => (
               <div
                 key={p.id}
                 className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
