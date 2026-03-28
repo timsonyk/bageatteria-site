@@ -302,3 +302,14 @@ class ProductAvailabilityBulkUpdate(BaseModel):
     store_location_ids: List[int]  # List of store location IDs where product is available
 
 
+class CategoryAvailabilityCreate(BaseModel):
+    category_id: int
+    store_location_id: int
+
+
+class CategoryAvailabilityBulkUpdate(BaseModel):
+    """Update all store availability for a category at once"""
+    category_id: int
+    store_location_ids: List[int]  # List of store location IDs where category is available
+
+

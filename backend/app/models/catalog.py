@@ -239,3 +239,15 @@ class ProductStoreAvailability(Base):
 
     product = relationship("Product", backref=backref("store_availabilities", cascade="all, delete-orphan"))
     store_location = relationship("StoreLocation", backref=backref("product_availabilities", cascade="all, delete-orphan"))
+
+
+class CategoryStoreAvailability(Base):
+    """Many-to-many relationship between categories and store locations"""
+    __tablename__ = "category_store_availability"
+
+    id = Column(Integer, primary_key=True)
+    category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False, index=True)
+    store_location_id = Column(Integer, ForeignKey("store_locations.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    category = relationship("Category", backref=backref("store_availabilities", cascade="all, delete-orphan"))
+    store_location = relationship("StoreLocation", backref=backref("category_availabilities", cascade="all, delete-orphan"))

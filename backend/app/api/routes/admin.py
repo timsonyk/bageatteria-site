@@ -1,7 +1,9 @@
 from typing import Optional
 import os
 import uuid
+import io
 from decimal import Decimal, ROUND_HALF_UP
+from PIL import Image
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status, Query, UploadFile, File, Request
 from sqlalchemy.orm import Session, joinedload
@@ -781,7 +783,9 @@ def adjust_customer_points(
 # SECURITY: Allowed file types for upload
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}
 ALLOWED_IMAGE_MIMES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
-MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20 MB
+TARGET_IMAGE_SIZE = (1200, 1200)  # Max dimensions after compression
+JPEG_QUALITY = 85  # Quality for JPEG compression
 
 
 @router.post("/upload")
@@ -813,6 +817,42 @@ async def upload_file(
         )
 
     os.makedirs(settings.upload_dir, exist_ok=True)
+
+    # Compress images (except SVG and GIF)
+    compressible_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+    if ext in compressible_extensions:
+        try:
+            img = Image.open(io.BytesIO(content))
+
+            # Convert RGBA to RGB for JPEG (if needed)
+            if img.mode in ("RGBA", "P") and ext in {".jpg", ".jpeg"}:
+                img = img.convert("RGB")
+            elif img.mode == "P":
+                img = img.convert("RGBA" if "transparency" in img.info else "RGB")
+
+            # Resize if larger than target size while maintaining aspect ratio
+            img.thumbnail(TARGET_IMAGE_SIZE, Image.Resampling.LANCZOS)
+
+            # Save compressed image
+            output = io.BytesIO()
+            if ext in {".jpg", ".jpeg"}:
+                img.save(output, format="JPEG", quality=JPEG_QUALITY, optimize=True)
+                save_ext = ".jpg"
+            elif ext == ".png":
+                img.save(output, format="PNG", optimize=True)
+                save_ext = ".png"
+            elif ext == ".webp":
+                img.save(output, format="WEBP", quality=JPEG_QUALITY)
+                save_ext = ".webp"
+            else:
+                save_ext = ext
+
+            content = output.getvalue()
+            ext = save_ext
+        except Exception:
+            # If compression fails, save original file
+            pass
+
     filename = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(settings.upload_dir, filename)
 
@@ -1127,6 +1167,95 @@ def bulk_update_product_availability(
         joinedload(cat_models.ProductStoreAvailability.store_location),
     ).filter(
         cat_models.ProductStoreAvailability.product_id == payload.product_id
+    ).all()
+
+
+# -------- Category Store Availability --------
+@router.get("/category_availability")
+def list_category_availability(
+    category_id: Optional[int] = None,
+    store_location_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Get category availability records, optionally filtered"""
+    q = db.query(cat_models.CategoryStoreAvailability).options(
+        joinedload(cat_models.CategoryStoreAvailability.category),
+        joinedload(cat_models.CategoryStoreAvailability.store_location),
+    )
+    if category_id:
+        q = q.filter(cat_models.CategoryStoreAvailability.category_id == category_id)
+    if store_location_id:
+        q = q.filter(cat_models.CategoryStoreAvailability.store_location_id == store_location_id)
+    return q.all()
+
+
+@router.post("/category_availability")
+def create_category_availability(
+    payload: admin_schemas.CategoryAvailabilityCreate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Add category availability at a store"""
+    # Check if already exists
+    existing = db.query(cat_models.CategoryStoreAvailability).filter(
+        cat_models.CategoryStoreAvailability.category_id == payload.category_id,
+        cat_models.CategoryStoreAvailability.store_location_id == payload.store_location_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Availability already exists")
+
+    obj = cat_models.CategoryStoreAvailability(**payload.model_dump())
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.delete("/category_availability/{availability_id}")
+def delete_category_availability(
+    availability_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Remove category availability at a store"""
+    obj = db.query(cat_models.CategoryStoreAvailability).filter(
+        cat_models.CategoryStoreAvailability.id == availability_id
+    ).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Availability not found")
+    db.delete(obj)
+    db.commit()
+    return {"deleted": True}
+
+
+@router.post("/category_availability/bulk")
+def bulk_update_category_availability(
+    payload: admin_schemas.CategoryAvailabilityBulkUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Replace all store availability for a category"""
+    # Delete existing availability for this category
+    db.query(cat_models.CategoryStoreAvailability).filter(
+        cat_models.CategoryStoreAvailability.category_id == payload.category_id
+    ).delete()
+
+    # Create new availability records
+    for store_id in payload.store_location_ids:
+        obj = cat_models.CategoryStoreAvailability(
+            category_id=payload.category_id,
+            store_location_id=store_id,
+        )
+        db.add(obj)
+
+    db.commit()
+
+    # Return newly created records
+    return db.query(cat_models.CategoryStoreAvailability).options(
+        joinedload(cat_models.CategoryStoreAvailability.store_location),
+    ).filter(
+        cat_models.CategoryStoreAvailability.category_id == payload.category_id
     ).all()
 
 
