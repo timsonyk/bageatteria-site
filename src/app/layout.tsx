@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 
@@ -7,6 +7,10 @@ const montserrat = Montserrat({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600", "700"],
 });
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Bageatteria — Меню",

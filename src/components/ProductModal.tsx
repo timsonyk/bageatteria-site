@@ -39,7 +39,7 @@ function ProductCard({
       </div>
 
       {/* Product Info */}
-      <div className="px-4 py-4">
+      <div className="px-4 pt-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         <h2 className="text-[22px] font-bold text-black">{product.name}</h2>
 
         <div className="flex items-baseline gap-3 mt-2">
@@ -51,9 +51,29 @@ function ProductCard({
           )}
         </div>
 
+        {/* Описание */}
+        {product.description && (
+          <div className="mt-3">
+            <h3 className="text-[14px] font-semibold text-black mb-1">Описание</h3>
+            <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+              {product.description}
+            </p>
+          </div>
+        )}
+
+        {/* Состав */}
+        {product.ingredients && (
+          <div className="mt-3">
+            <h3 className="text-[14px] font-semibold text-black mb-1">Состав</h3>
+            <p className="text-[14px] text-gray-600 leading-relaxed whitespace-pre-line">
+              {product.ingredients}
+            </p>
+          </div>
+        )}
+
         {/* КБЖУ */}
         {(product.calories || product.proteins || product.fats || product.carbs) && (
-          <div className="mt-4 pt-4 pb-4 border-t border-b border-gray-100">
+          <div className="mt-4 pt-4 border-t border-gray-100">
             <h3 className="text-[14px] font-semibold text-black mb-2">Пищевая ценность</h3>
             <div className="grid grid-cols-4 gap-2">
               {product.calories !== null && (
@@ -81,22 +101,6 @@ function ProductCard({
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {product.description && (
-          <p className="text-[15px] text-gray-600 mt-3 leading-relaxed whitespace-pre-line">
-            {product.description}
-          </p>
-        )}
-
-        {/* Состав */}
-        {product.ingredients && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <h3 className="text-[14px] font-semibold text-black mb-2">Состав</h3>
-            <p className="text-[14px] text-gray-600 leading-relaxed whitespace-pre-line">
-              {product.ingredients}
-            </p>
           </div>
         )}
       </div>
@@ -234,7 +238,7 @@ export function ProductModal({
     };
   }, [isOpen, onClose, goToPrev, goToNext]);
 
-  // Touch handlers
+  // Touch handlers for handle (close gesture)
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
     const touch = e.touches[0];
@@ -243,6 +247,48 @@ export function ProductModal({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (isTransitioning || !touchStart) return;
+
+    const touch = e.touches[0];
+    const diffY = touch.clientY - touchStart.y;
+
+    // Only allow swiping down (positive diffY)
+    if (diffY > 0) {
+      setVerticalOffset(diffY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isTransitioning || !touchStart) {
+      setTouchStart(null);
+      return;
+    }
+
+    const vOffset = verticalOffset;
+    setTouchStart(null);
+
+    // Handle vertical swipe (close on swipe down)
+    if (vOffset > 100) {
+      onClose();
+      setVerticalOffset(0);
+      return;
+    } else {
+      // Snap back
+      setIsTransitioning(true);
+      setVerticalOffset(0);
+      setTimeout(() => setIsTransitioning(false), 250);
+    }
+  };
+
+  // Touch handlers for carousel (horizontal swipe only)
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    if (isTransitioning) return;
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+    setSwipeDirection(null);
+  };
+
+  const handleCarouselTouchMove = (e: React.TouchEvent) => {
     if (isTransitioning || !touchStart) return;
 
     const touch = e.touches[0];
@@ -260,18 +306,10 @@ export function ProductModal({
       } else {
         setSwipeOffset(diffX);
       }
-    } else if (swipeDirection === "vertical") {
-      // Only allow swiping down (positive diffY)
-      if (diffY > 0) {
-        setVerticalOffset(diffY);
-      } else {
-        // Resistance when swiping up
-        setVerticalOffset(diffY * 0.1);
-      }
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleCarouselTouchEnd = () => {
     if (isTransitioning || !touchStart) {
       setTouchStart(null);
       setSwipeDirection(null);
@@ -279,26 +317,8 @@ export function ProductModal({
     }
 
     const hOffset = swipeOffset;
-    const vOffset = verticalOffset;
-    const direction = swipeDirection;
     setTouchStart(null);
     setSwipeDirection(null);
-
-    // Handle vertical swipe (close on swipe down)
-    if (direction === "vertical") {
-      if (vOffset > 100) {
-        // Close the modal
-        onClose();
-        setVerticalOffset(0);
-        return;
-      } else {
-        // Snap back
-        setIsTransitioning(true);
-        setVerticalOffset(0);
-        setTimeout(() => setIsTransitioning(false), 250);
-        return;
-      }
-    }
 
     // Handle horizontal swipe (navigate between products)
     if (Math.abs(hOffset) > minSwipeDistance) {
@@ -336,12 +356,11 @@ export function ProductModal({
       {/* Navigation dots */}
       {products.length > 1 && (
         <div
-          className="absolute left-0 right-0 flex justify-center"
+          className="absolute left-0 right-0 flex justify-center z-20 pointer-events-none"
           style={{
-            bottom: isAnimating ? "91vh" : 0,
+            top: isAnimating ? "12px" : "100%",
             opacity: isAnimating ? 1 : 0,
-            marginBottom: "12px",
-            transition: "bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+            transition: "top 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           }}
         >
           <div className="flex items-center gap-1.5">
@@ -410,8 +429,9 @@ export function ProductModal({
 
       {/* Modal Sheet */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] h-[91vh] overflow-hidden transform"
+        className="absolute inset-x-0 bottom-0 bg-white rounded-t-[20px] overflow-hidden transform"
         style={{
+          top: "44px",
           transform: isAnimating
             ? `translateY(${verticalOffset}px)`
             : "translateY(100%)",
@@ -452,10 +472,10 @@ export function ProductModal({
 
         {/* Swipeable Carousel */}
         <div
-          className="h-[calc(91vh-40px)] overflow-hidden"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          className="h-[calc(100%-40px)] overflow-hidden"
+          onTouchStart={handleCarouselTouchStart}
+          onTouchMove={handleCarouselTouchMove}
+          onTouchEnd={handleCarouselTouchEnd}
         >
           <div
             className="flex h-full"
