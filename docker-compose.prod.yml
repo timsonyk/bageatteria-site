@@ -1,0 +1,132 @@
+version: "3.9"
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  # FastAPI Backend
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - internal
+    expose:
+      - "8000"
+
+  # Telegram Bot
+  telegram-bot:
+    build: ./backend
+    command: python telegram_bot.py
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+      - backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ./backend/telegram_bot.py:/app/telegram_bot.py
+      - ./backend/app:/app/app
+    networks:
+      - internal
+
+  # Auth Bot
+  auth-bot:
+    build: ./backend
+    command: python auth_bot.py
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ./backend/auth_bot.py:/app/auth_bot.py
+    networks:
+      - internal
+
+  # Next.js Site
+  site:
+    build:
+      context: ./site
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.slytn.ru
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - internal
+    expose:
+      - "3000"
+
+  # Admin Panel (Vite + React)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: https://api.slytn.ru
+    restart: unless-stopped
+    networks:
+      - internal
+    expose:
+      - "80"
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/sites:/etc/nginx/sites-enabled:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - site
+      - admin
+    networks:
+      - internal
+      - external
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge
+
+volumes:
+  db_data:
