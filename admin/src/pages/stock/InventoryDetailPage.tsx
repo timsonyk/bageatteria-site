@@ -1,6 +1,6 @@
 import { Card, Descriptions, Table, Tag, Typography, Spin, Row, Col, Alert, Button, Space, Modal, Input, message } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { useState } from 'react'
 import dayjs from 'dayjs'
@@ -79,7 +79,6 @@ const getStatusTag = (status: string) => {
 
 export const InventoryDetailPage = () => {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [rejectNotes, setRejectNotes] = useState('')

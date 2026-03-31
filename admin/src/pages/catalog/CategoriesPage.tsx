@@ -64,10 +64,25 @@ export const CategoriesPage = () => {
   })
 
   const columns = [
-    { title: 'ID', dataIndex: 'id' },
+    { title: 'ID', dataIndex: 'id', width: 60 },
     { title: 'Название', dataIndex: 'name' },
-    { title: 'Сортировка', dataIndex: 'sort_order' },
-    { title: 'Активна', dataIndex: 'is_active', render: (v: boolean) => (v ? 'Да' : 'Нет') },
+    { title: 'Сортировка', dataIndex: 'sort_order', width: 100 },
+    {
+      title: 'Активна',
+      dataIndex: 'is_active',
+      width: 80,
+      render: (v: boolean, record: any) => (
+        <Switch
+          checked={v}
+          size="small"
+          onChange={(checked) => {
+            api.put(`/admin/categories/${record.id}`, { ...record, is_active: checked }).then(() => {
+              qc.invalidateQueries({ queryKey: ['categories'] })
+            })
+          }}
+        />
+      ),
+    },
     {
       title: 'Действия',
       render: (_: any, record: any) => (

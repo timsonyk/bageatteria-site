@@ -1,4 +1,4 @@
-import { Button, Table, Tag, Space, Select, Card, Typography, Modal, Form, Input, InputNumber, Switch, Tabs } from 'antd'
+import { Button, Table, Tag, Space, Select, Typography, Modal, Form, Input, InputNumber, Switch, Tabs } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../../lib/api'

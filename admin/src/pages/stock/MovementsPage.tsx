@@ -67,15 +67,6 @@ const getMovementTypeTag = (type: string) => {
   }
 }
 
-const getMovementTypeLabel = (type: string) => {
-  switch (type) {
-    case 'delivery': return 'Приход'
-    case 'sale': return 'Продажа'
-    case 'write_off': return 'Списание'
-    case 'inventory_adjustment': return 'Корректировка'
-    default: return type
-  }
-}
 
 export const MovementsPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<number | undefined>()

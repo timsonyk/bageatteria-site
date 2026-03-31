@@ -14,7 +14,6 @@ import {
 } from '@ant-design/icons'
 
 const { Title } = Typography
-const { RangePicker } = DatePicker
 
 interface Delivery {
   id: number
@@ -75,7 +74,7 @@ const getStatusTag = (status: string, hasDiscrepancies: boolean) => {
 }
 
 export const DeliveriesPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const qc = useQueryClient()
   const [createOpen, setCreateOpen] = useState(false)
   const [form] = Form.useForm()

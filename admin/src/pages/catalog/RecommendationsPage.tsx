@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Select, Space, Table, Typography, message } from 'antd'
+import { Button, Card, Select, Table, Typography, message } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { ConfigProvider, theme as antdTheme } from 'antd'
 import ruRU from 'antd/locale/ru_RU'
 

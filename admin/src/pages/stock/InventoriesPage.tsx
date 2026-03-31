@@ -1,4 +1,4 @@
-import { Button, Table, Tag, Space, Select, DatePicker, Card, Typography } from 'antd'
+import { Button, Table, Tag, Space, Select, Card, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../../lib/api'
@@ -42,7 +42,7 @@ const fetchLocations = async (): Promise<StoreLocation[]> => {
   return res.data
 }
 
-const getStatusTag = (status: string, hasDiscrepancies: boolean, withinTolerance: boolean) => {
+const getStatusTag = (status: string, _hasDiscrepancies: boolean, _withinTolerance: boolean) => {
   switch (status) {
     case 'draft':
       return <Tag color="default">Черновик</Tag>
