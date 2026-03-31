@@ -26,7 +26,7 @@ function ProductCard({
   return (
     <div className="w-full flex-shrink-0">
       {/* Product Image */}
-      <div className="relative aspect-square bg-[#EAEAEA] mx-4 rounded-[20px] overflow-hidden">
+      <div className="relative aspect-square bg-[#EAEAEA] mx-6 mt-2 rounded-[20px] overflow-hidden">
         <Image
           src={imageUrl}
           alt={product.name}
