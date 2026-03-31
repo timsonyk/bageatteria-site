@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
 
@@ -122,6 +122,8 @@ export function ProductModal({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<"horizontal" | "vertical" | null>(null);
+  const [isOverscrolling, setIsOverscrolling] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:8000";
   const minSwipeDistance = 60;
@@ -280,12 +282,13 @@ export function ProductModal({
     }
   };
 
-  // Touch handlers for carousel (horizontal swipe only)
+  // Touch handlers for carousel (horizontal swipe + overscroll to close)
   const handleCarouselTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
     const touch = e.touches[0];
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setSwipeDirection(null);
+    setIsOverscrolling(false);
   };
 
   const handleCarouselTouchMove = (e: React.TouchEvent) => {
@@ -295,8 +298,18 @@ export function ProductModal({
     const diffX = touch.clientX - touchStart.x;
     const diffY = touch.clientY - touchStart.y;
 
+    // Check if we're at the top of scroll and pulling down
+    const scrollContainer = scrollContainerRef.current;
+    const isAtTop = scrollContainer ? scrollContainer.scrollTop <= 0 : true;
+
     if (!swipeDirection && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
-      setSwipeDirection(Math.abs(diffX) > Math.abs(diffY) ? "horizontal" : "vertical");
+      // If at top and pulling down, start overscroll
+      if (isAtTop && diffY > 0 && Math.abs(diffY) > Math.abs(diffX)) {
+        setSwipeDirection("vertical");
+        setIsOverscrolling(true);
+      } else {
+        setSwipeDirection(Math.abs(diffX) > Math.abs(diffY) ? "horizontal" : "vertical");
+      }
     }
 
     if (swipeDirection === "horizontal") {
@@ -306,6 +319,10 @@ export function ProductModal({
       } else {
         setSwipeOffset(diffX);
       }
+    } else if (swipeDirection === "vertical" && isOverscrolling && diffY > 0) {
+      // Overscroll to close
+      e.preventDefault();
+      setVerticalOffset(diffY);
     }
   };
 
@@ -313,12 +330,30 @@ export function ProductModal({
     if (isTransitioning || !touchStart) {
       setTouchStart(null);
       setSwipeDirection(null);
+      setIsOverscrolling(false);
       return;
     }
 
     const hOffset = swipeOffset;
+    const vOffset = verticalOffset;
     setTouchStart(null);
     setSwipeDirection(null);
+
+    // Handle overscroll close
+    if (isOverscrolling && vOffset > 100) {
+      onClose();
+      setVerticalOffset(0);
+      setIsOverscrolling(false);
+      return;
+    }
+
+    if (isOverscrolling) {
+      setIsTransitioning(true);
+      setVerticalOffset(0);
+      setIsOverscrolling(false);
+      setTimeout(() => setIsTransitioning(false), 250);
+      return;
+    }
 
     // Handle horizontal swipe (navigate between products)
     if (Math.abs(hOffset) > minSwipeDistance) {
@@ -484,9 +519,10 @@ export function ProductModal({
               transition: isTransitioning ? "transform 0.25s ease-out" : "none",
             }}
           >
-            {carouselProducts.map(({ product: p }) => (
+            {carouselProducts.map(({ product: p, position }) => (
               <div
                 key={p.id}
+                ref={position === 0 ? scrollContainerRef : undefined}
                 className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               >
                 <ProductCard product={p} getImageUrl={getImageUrl} />
