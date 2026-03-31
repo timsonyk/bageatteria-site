@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "api.bageatteria.ru",
+        hostname: "api.slytn.ru",
         pathname: "/uploads/**",
       },
     ],

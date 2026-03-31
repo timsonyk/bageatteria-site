@@ -68,9 +68,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.slytn.ru
+        - NEXT_PUBLIC_MEDIA_URL=https://api.slytn.ru
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=https://api.slytn.ru
+      - NEXT_PUBLIC_MEDIA_URL=https://api.slytn.ru
       - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
