@@ -65,6 +65,17 @@ export default function MenuPage() {
     return grouped;
   }, [products]);
 
+  // Сортировка товаров для модалки: сначала по категории, потом по sort_order
+  const sortedProducts = useMemo(() => {
+    const categoryOrder = new Map(categories.map((c) => [c.id, c.sort_order]));
+    return [...products].sort((a, b) => {
+      const catOrderA = categoryOrder.get(a.category_id) ?? 999;
+      const catOrderB = categoryOrder.get(b.category_id) ?? 999;
+      if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+      return a.sort_order - b.sort_order;
+    });
+  }, [products, categories]);
+
   // Отслеживание скролла для автоматической смены категории
   useEffect(() => {
     if (loading || categories.length === 0) return;
@@ -191,7 +202,7 @@ export default function MenuPage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         product={selectedProduct}
-        products={products}
+        products={sortedProducts}
         onProductChange={handleProductChange}
       />
     </div>
