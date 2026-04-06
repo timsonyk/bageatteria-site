@@ -46,7 +46,7 @@ export function CategoryTabs({ categories, activeId, onSelect }: CategoryTabsPro
   return (
     <div
       ref={containerRef}
-      className="sticky top-0 z-20 bg-background py-3 -mx-4 px-4 overflow-x-auto scrollbar-hide"
+      className="sticky top-0 z-20 bg-background py-3 -mx-2.5 px-2.5 overflow-x-auto scrollbar-hide"
     >
       <div className="relative flex gap-2">
         {/* Анимированный индикатор */}

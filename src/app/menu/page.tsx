@@ -162,7 +162,7 @@ export default function MenuPage() {
     <div className="min-h-screen bg-background">
       <Header rightElement={<LocationSelector onLocationChange={handleLocationChange} />} />
 
-      <main className="px-4 pb-6">
+      <main className="px-2.5 pb-6">
         {/* Табы категорий */}
         <CategoryTabs
           categories={categories}
