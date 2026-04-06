@@ -30,6 +30,18 @@ export const ProductsPage = () => {
   const qc = useQueryClient()
   const { data: products, isLoading } = useQuery({ queryKey: ['products'], queryFn: fetchProducts })
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
+
+  // Сортировка как на публичном сайте: сначала по категории, потом по sort_order
+  const sortedProducts = useMemo(() => {
+    if (!products || !categories) return []
+    const categoryOrder = new Map<number, number>(categories.map((c: any) => [c.id, c.sort_order ?? 0]))
+    return [...products].sort((a: any, b: any) => {
+      const catOrderA = categoryOrder.get(a.category_id) ?? 999
+      const catOrderB = categoryOrder.get(b.category_id) ?? 999
+      if (catOrderA !== catOrderB) return catOrderA - catOrderB
+      return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
+    })
+  }, [products, categories])
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
@@ -270,9 +282,10 @@ export const ProductsPage = () => {
       </Space>
       <Table
         loading={isLoading}
-        dataSource={products || []}
+        dataSource={sortedProducts}
         columns={columns as any}
         rowKey="id"
+        pagination={false}
       />
 
       <Modal
