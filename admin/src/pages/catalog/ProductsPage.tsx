@@ -107,15 +107,15 @@ function SortableProductRow({
         alignItems: 'center',
         gap: 12,
         padding: '12px 16px',
-        background: isDragging ? '#fafafa' : '#fff',
-        borderBottom: '1px solid #f0f0f0',
+        opacity: isDragging ? 0.5 : 1,
+        borderBottom: '1px solid var(--ant-color-border-secondary, #f0f0f0)',
         cursor: 'default',
       }}
     >
       <div
         {...attributes}
         {...listeners}
-        style={{ cursor: 'grab', color: '#999', display: 'flex', alignItems: 'center' }}
+        style={{ cursor: 'grab', opacity: 0.5, display: 'flex', alignItems: 'center' }}
       >
         <HolderOutlined style={{ fontSize: 16 }} />
       </div>
@@ -127,16 +127,16 @@ function SortableProductRow({
           style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
         />
       ) : (
-        <div style={{ width: 48, height: 48, background: '#f5f5f5', borderRadius: 6, flexShrink: 0 }} />
+        <div style={{ width: 48, height: 48, background: 'var(--ant-color-fill-tertiary, #f5f5f5)', borderRadius: 6, flexShrink: 0 }} />
       )}
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <Typography.Text strong ellipsis style={{ display: 'block' }}>
           {product.name}
-        </div>
-        <div style={{ fontSize: 12, color: '#888' }}>
+        </Typography.Text>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {product.base_price} ₽ {product.size_label && `· ${product.size_label}`}
-        </div>
+        </Typography.Text>
       </div>
 
       <Switch
