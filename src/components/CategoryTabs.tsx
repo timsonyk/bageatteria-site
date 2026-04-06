@@ -60,18 +60,24 @@ export function CategoryTabs({ categories, activeId, onSelect }: CategoryTabsPro
         />
 
         {/* Категории */}
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            ref={(el) => {
-              if (el) buttonsRef.current.set(category.id, el);
-            }}
-            onClick={() => onSelect(category.id)}
-            className="relative z-10 flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border-0 outline-none bg-transparent text-black"
-          >
-            {category.name}
-          </button>
-        ))}
+        {categories.map((category) => {
+          const isActive = activeId === category.id;
+          return (
+            <button
+              key={category.id}
+              ref={(el) => {
+                if (el) buttonsRef.current.set(category.id, el);
+              }}
+              onClick={() => onSelect(category.id)}
+              className={cn(
+                "relative z-10 flex-shrink-0 px-4 py-2 rounded-full text-base whitespace-nowrap border-0 outline-none bg-transparent text-black",
+                isActive ? "font-medium" : "font-normal"
+              )}
+            >
+              {category.name}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
