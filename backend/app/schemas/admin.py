@@ -313,3 +313,13 @@ class CategoryAvailabilityBulkUpdate(BaseModel):
     store_location_ids: List[int]  # List of store location IDs where category is available
 
 
+class ProductSortOrderItem(BaseModel):
+    id: int
+    sort_order: int
+
+
+class ProductSortOrderBulkUpdate(BaseModel):
+    """Bulk update sort_order for products"""
+    items: List[ProductSortOrderItem]
+
+

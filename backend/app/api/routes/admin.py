@@ -153,6 +153,30 @@ def bulk_update_product_prices(
     return {"updated_products": len(products), "updated_sizes": updated_sizes, "multiplier": float(multiplier)}
 
 
+@router.post("/products/bulk_sort")
+def bulk_update_product_sort_order(
+    payload: admin_schemas.ProductSortOrderBulkUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Bulk update sort_order for multiple products"""
+    if not payload.items:
+        return {"updated": 0}
+
+    product_ids = [item.id for item in payload.items]
+    products = db.query(cat_models.Product).filter(cat_models.Product.id.in_(product_ids)).all()
+    products_map = {p.id: p for p in products}
+
+    updated = 0
+    for item in payload.items:
+        if item.id in products_map:
+            products_map[item.id].sort_order = item.sort_order
+            updated += 1
+
+    db.commit()
+    return {"updated": updated}
+
+
 @router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db), user=Depends(get_admin_user)):
     obj = db.query(cat_models.Product).filter(cat_models.Product.id == product_id).first()

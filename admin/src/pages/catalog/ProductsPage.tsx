@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import {
   Button,
   Drawer,
@@ -13,10 +13,30 @@ import {
   Typography,
   Upload,
   message,
+  Card,
+  Spin,
 } from 'antd'
+import { HolderOutlined, EditOutlined, DeleteOutlined, SettingOutlined, ShopOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const fetchProducts = async () => (await api.get('/admin/products')).data
 const fetchCategories = async () => (await api.get('/admin/categories')).data
@@ -26,27 +46,201 @@ const fetchStoreLocations = async () => (await api.get('/admin/store_locations')
 const fetchProductAvailability = async (productId: number) =>
   (await api.get('/admin/product_availability', { params: { product_id: productId } })).data
 
+interface Product {
+  id: number
+  name: string
+  category_id: number
+  base_price: number
+  sort_order: number
+  is_active: boolean
+  media?: string[]
+  size_label?: string
+  [key: string]: any
+}
+
+interface Category {
+  id: number
+  name: string
+  sort_order: number
+  is_active: boolean
+}
+
+// Sortable product row component
+function SortableProductRow({
+  product,
+  onEdit,
+  onSizes,
+  onAvailability,
+  onDelete,
+  onToggleActive,
+}: {
+  product: Product
+  onEdit: (p: Product) => void
+  onSizes: (p: Product) => void
+  onAvailability: (p: Product) => void
+  onDelete: (id: number) => void
+  onToggleActive: (p: Product, active: boolean) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: product.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const imageUrl = product.media?.[0]
+  const fullImageUrl = imageUrl
+    ? imageUrl.startsWith('http')
+      ? imageUrl
+      : `${import.meta.env.VITE_API_URL || ''}${imageUrl}`
+    : null
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        background: isDragging ? '#fafafa' : '#fff',
+        borderBottom: '1px solid #f0f0f0',
+        cursor: 'default',
+      }}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        style={{ cursor: 'grab', color: '#999', display: 'flex', alignItems: 'center' }}
+      >
+        <HolderOutlined style={{ fontSize: 16 }} />
+      </div>
+
+      {fullImageUrl ? (
+        <img
+          src={fullImageUrl}
+          alt=""
+          style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
+        />
+      ) : (
+        <div style={{ width: 48, height: 48, background: '#f5f5f5', borderRadius: 6, flexShrink: 0 }} />
+      )}
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {product.name}
+        </div>
+        <div style={{ fontSize: 12, color: '#888' }}>
+          {product.base_price} ₽ {product.size_label && `· ${product.size_label}`}
+        </div>
+      </div>
+
+      <Switch
+        checked={product.is_active}
+        size="small"
+        onChange={(checked) => onToggleActive(product, checked)}
+      />
+
+      <Space size={4}>
+        <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(product)} />
+        <Button type="text" size="small" icon={<SettingOutlined />} onClick={() => onSizes(product)} />
+        <Button type="text" size="small" icon={<ShopOutlined />} onClick={() => onAvailability(product)} />
+        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(product.id)} />
+      </Space>
+    </div>
+  )
+}
+
+// Category group component with sortable products
+function CategoryGroup({
+  category,
+  products,
+  onReorder,
+  onEdit,
+  onSizes,
+  onAvailability,
+  onDelete,
+  onToggleActive,
+}: {
+  category: Category
+  products: Product[]
+  onReorder: (categoryId: number, newOrder: Product[]) => void
+  onEdit: (p: Product) => void
+  onSizes: (p: Product) => void
+  onAvailability: (p: Product) => void
+  onDelete: (id: number) => void
+  onToggleActive: (p: Product, active: boolean) => void
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = products.findIndex((p) => p.id === active.id)
+      const newIndex = products.findIndex((p) => p.id === over.id)
+      const newOrder = arrayMove(products, oldIndex, newIndex)
+      onReorder(category.id, newOrder)
+    }
+  }
+
+  return (
+    <Card
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{category.name}</span>
+          <span style={{ fontSize: 12, color: '#888', fontWeight: 400 }}>({products.length})</span>
+        </div>
+      }
+      style={{ marginBottom: 16 }}
+      styles={{ body: { padding: 0 } }}
+    >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={products.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+          {products.map((product) => (
+            <SortableProductRow
+              key={product.id}
+              product={product}
+              onEdit={onEdit}
+              onSizes={onSizes}
+              onAvailability={onAvailability}
+              onDelete={onDelete}
+              onToggleActive={onToggleActive}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+      {products.length === 0 && (
+        <div style={{ padding: 24, textAlign: 'center', color: '#999' }}>Нет товаров в этой категории</div>
+      )}
+    </Card>
+  )
+}
+
 export const ProductsPage = () => {
   const qc = useQueryClient()
   const { data: products, isLoading } = useQuery({ queryKey: ['products'], queryFn: fetchProducts })
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
-
-  // Сортировка как на публичном сайте: сначала по категории, потом по sort_order
-  const sortedProducts = useMemo(() => {
-    if (!products || !categories) return []
-    const categoryOrder = new Map<number, number>(categories.map((c: any) => [c.id, c.sort_order ?? 0]))
-    return [...products].sort((a: any, b: any) => {
-      const catOrderA = categoryOrder.get(a.category_id) ?? 999
-      const catOrderB = categoryOrder.get(b.category_id) ?? 999
-      if (catOrderA !== catOrderB) return catOrderA - catOrderB
-      return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
-    })
-  }, [products, categories])
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
-  const [editing, setEditing] = useState<any>(null)
+  const [editing, setEditing] = useState<Product | null>(null)
   const [fileList, setFileList] = useState<UploadFile[]>([])
 
+  // Local state for optimistic reordering
+  const [localProducts, setLocalProducts] = useState<Product[]>([])
+
+  // Sync local products with server data
+  useEffect(() => {
+    if (products) {
+      setLocalProducts(products)
+    }
+  }, [products])
 
   const [sizesOpen, setSizesOpen] = useState(false)
   const [currentProductId, setCurrentProductId] = useState<number | null>(null)
@@ -68,6 +262,30 @@ export const ProductsPage = () => {
   })
   const [selectedStores, setSelectedStores] = useState<number[]>([])
 
+  // Sorted categories
+  const sortedCategories = useMemo(() => {
+    if (!categories) return []
+    return [...categories].sort((a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  }, [categories])
+
+  // Group products by category
+  const productsByCategory = useMemo(() => {
+    const grouped: Record<number, Product[]> = {}
+    for (const cat of sortedCategories) {
+      grouped[cat.id] = []
+    }
+    for (const product of localProducts) {
+      if (grouped[product.category_id]) {
+        grouped[product.category_id].push(product)
+      }
+    }
+    // Sort products within each category by sort_order
+    for (const catId of Object.keys(grouped)) {
+      grouped[Number(catId)].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    }
+    return grouped
+  }, [localProducts, sortedCategories])
+
   const saveProduct = useMutation({
     mutationFn: async (values: any) => {
       if (editing) return api.put(`/admin/products/${editing.id}`, values)
@@ -78,6 +296,20 @@ export const ProductsPage = () => {
       setOpen(false)
       setEditing(null)
       form.resetFields()
+    },
+  })
+
+  const saveSortOrder = useMutation({
+    mutationFn: async (items: { id: number; sort_order: number }[]) => {
+      return api.post('/admin/products/bulk_sort', { items })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: () => {
+      message.error('Не удалось сохранить порядок')
+      // Revert to server state
+      if (products) setLocalProducts(products)
     },
   })
 
@@ -118,104 +350,68 @@ export const ProductsPage = () => {
     },
   })
 
+  const handleReorder = useCallback(
+    (categoryId: number, newOrder: Product[]) => {
+      // Update local state immediately (optimistic)
+      setLocalProducts((prev) => {
+        const otherProducts = prev.filter((p) => p.category_id !== categoryId)
+        const updatedProducts = newOrder.map((p, idx) => ({ ...p, sort_order: idx }))
+        return [...otherProducts, ...updatedProducts]
+      })
 
-  const columns = useMemo(
-    () => [
-      { title: 'ID', dataIndex: 'id', width: 60 },
-      {
-        title: 'Фото',
-        dataIndex: 'media',
-        width: 60,
-        render: (media: string[]) => {
-          const url = media?.[0]
-          if (!url) return <div style={{ width: 40, height: 40, background: '#f0f0f0', borderRadius: 4 }} />
-          const fullUrl = url.startsWith('http') ? url : `${import.meta.env.VITE_API_URL || ''}${url}`
-          return (
-            <img
-              src={fullUrl}
-              alt=""
-              style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }}
-            />
-          )
-        },
-      },
-      { title: 'Название', dataIndex: 'name' },
-      {
-        title: 'Категория',
-        dataIndex: 'category_id',
-        render: (id: number) => categories?.find((c: any) => c.id === id)?.name || id,
-      },
-      { title: 'Базовая цена', dataIndex: 'base_price' },
-      { title: 'Размеры', render: (_: any, record: any) => (record.size_label ? record.size_label : 'таблица размеров') },
-      {
-        title: 'Активен',
-        dataIndex: 'is_active',
-        width: 80,
-        render: (v: boolean, record: any) => (
-          <Switch
-            checked={v}
-            size="small"
-            onChange={(checked) => {
-              api.put(`/admin/products/${record.id}`, { ...record, is_active: checked }).then(() => {
-                qc.invalidateQueries({ queryKey: ['products'] })
-              })
-            }}
-          />
-        ),
-      },
-      {
-        title: 'Действия',
-        render: (_: any, record: any) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditing(record)
-                form.resetFields()
-                form.setFieldsValue(record)
-                if (record.media && Array.isArray(record.media)) {
-                  setFileList(
-                    record.media.map((url: string, idx: number) => ({
-                      uid: `${idx}`,
-                      name: url.split('/').pop() || `изображение-${idx}`,
-                      status: 'done',
-                      url,
-                    })),
-                  )
-                } else {
-                  setFileList([])
-                }
-                setOpen(true)
-              }}
-            >
-              Редактировать
-            </Button>
-            <Button
-              size="small"
-              onClick={() => {
-                setCurrentProductId(record.id)
-                setSizesOpen(true)
-              }}
-            >
-              Размеры
-            </Button>
-            <Button
-              size="small"
-              onClick={() => {
-                setAvailabilityProductId(record.id)
-                setAvailabilityOpen(true)
-              }}
-            >
-              Точки
-            </Button>
-            <Button danger size="small" onClick={() => deleteProduct.mutate(record.id)}>
-              Удалить
-            </Button>
-          </Space>
-        ),
-      },
-    ],
-    [categories, form, deleteProduct],
+      // Save to server
+      const items = newOrder.map((p, idx) => ({ id: p.id, sort_order: idx }))
+      saveSortOrder.mutate(items)
+    },
+    [saveSortOrder]
+  )
+
+  const handleEdit = useCallback(
+    (product: Product) => {
+      setEditing(product)
+      form.resetFields()
+      form.setFieldsValue(product)
+      if (product.media && Array.isArray(product.media)) {
+        setFileList(
+          product.media.map((url: string, idx: number) => ({
+            uid: `${idx}`,
+            name: url.split('/').pop() || `изображение-${idx}`,
+            status: 'done' as const,
+            url,
+          }))
+        )
+      } else {
+        setFileList([])
+      }
+      setOpen(true)
+    },
+    [form]
+  )
+
+  const handleSizes = useCallback((product: Product) => {
+    setCurrentProductId(product.id)
+    setSizesOpen(true)
+  }, [])
+
+  const handleAvailability = useCallback((product: Product) => {
+    setAvailabilityProductId(product.id)
+    setAvailabilityOpen(true)
+  }, [])
+
+  const handleDelete = useCallback(
+    (id: number) => {
+      deleteProduct.mutate(id)
+    },
+    [deleteProduct]
+  )
+
+  const handleToggleActive = useCallback(
+    (product: Product, active: boolean) => {
+      api.put(`/admin/products/${product.id}`, { ...product, is_active: active }).then(() => {
+        qc.invalidateQueries({ queryKey: ['products'] })
+      })
+    },
+    [qc]
   )
 
   const openCreate = () => {
@@ -236,12 +432,7 @@ export const ProductsPage = () => {
       title: 'Действия',
       render: (_: any, record: any) => (
         <Space>
-          <Button
-            size="small"
-            onClick={() => {
-              sizeForm.setFieldsValue(record)
-            }}
-          >
+          <Button size="small" onClick={() => sizeForm.setFieldsValue(record)}>
             Редактировать
           </Button>
           <Button danger size="small" onClick={() => deleteSize.mutate(record.id)}>
@@ -259,7 +450,6 @@ export const ProductsPage = () => {
     }
   }, [sizesOpen, sizeForm])
 
-  // Load selected stores when opening availability drawer
   useEffect(() => {
     if (availabilityOpen && availabilityQuery.data) {
       setSelectedStores(availabilityQuery.data.map((a: any) => a.store_location_id))
@@ -273,20 +463,39 @@ export const ProductsPage = () => {
     }
   }, [availabilityOpen])
 
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <Spin size="large" />
+      </div>
+    )
+  }
+
   return (
     <>
-      <Space style={{ marginBottom: 12 }}>
+      <Space style={{ marginBottom: 16 }}>
         <Button type="primary" onClick={openCreate}>
           Новый товар
         </Button>
       </Space>
-      <Table
-        loading={isLoading}
-        dataSource={sortedProducts}
-        columns={columns as any}
-        rowKey="id"
-        pagination={false}
-      />
+
+      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        Перетаскивайте товары для изменения порядка
+      </Typography.Text>
+
+      {sortedCategories.map((category: Category) => (
+        <CategoryGroup
+          key={category.id}
+          category={category}
+          products={productsByCategory[category.id] || []}
+          onReorder={handleReorder}
+          onEdit={handleEdit}
+          onSizes={handleSizes}
+          onAvailability={handleAvailability}
+          onDelete={handleDelete}
+          onToggleActive={handleToggleActive}
+        />
+      ))}
 
       <Modal
         open={open}
@@ -294,16 +503,14 @@ export const ProductsPage = () => {
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={saveProduct.isPending}
-        destroyOnHidden
+        destroyOnClose
       >
         <Form
           layout="vertical"
           form={form}
           initialValues={{ is_active: true, sort_order: 0 }}
           onFinish={(values) => {
-            const mediaUrls = fileList
-              .map((f) => (f.response as any)?.url || f.url)
-              .filter(Boolean)
+            const mediaUrls = fileList.map((f) => (f.response as any)?.url || f.url).filter(Boolean)
             saveProduct.mutate({ ...values, media: mediaUrls })
           }}
         >
@@ -360,7 +567,7 @@ export const ProductsPage = () => {
                   const url = res.data.url
                   onSuccess?.(res.data, file as any)
                   setFileList((prev) =>
-                    prev.map((f) => (f.uid === (file as UploadFile).uid ? { ...f, url, status: 'done' } : f)),
+                    prev.map((f) => (f.uid === (file as UploadFile).uid ? { ...f, url, status: 'done' } : f))
                   )
                 } catch (err: any) {
                   message.error(err?.response?.data?.detail || 'Ошибка загрузки')
@@ -377,7 +584,7 @@ export const ProductsPage = () => {
               <p className="ant-upload-drag-icon">Нажмите или перетащите файлы</p>
             </Upload.Dragger>
           </Form.Item>
-          <Form.Item name="sort_order" label="Порядок сортировки" initialValue={0}>
+          <Form.Item name="sort_order" label="Порядок сортировки" hidden>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="is_active" label="Активен" valuePropName="checked">
@@ -391,7 +598,7 @@ export const ProductsPage = () => {
         open={sizesOpen}
         onClose={() => setSizesOpen(false)}
         size="large"
-        destroyOnHidden
+        destroyOnClose
       >
         <Form layout="vertical" form={sizeForm} onFinish={(values) => saveSize.mutate(values)}>
           <Form.Item name="id" hidden>
@@ -405,7 +612,7 @@ export const ProductsPage = () => {
               <Input placeholder="200 мл" />
             </Form.Item>
             <Form.Item name="base_price" label="Цена" rules={[{ required: true }]} style={{ width: 120 }}>
-              <InputNumber style={{ width: '100%' }} min={0} addonAfter="₽" />
+              <InputNumber style={{ width: '100%' }} min={0} suffix="₽" />
             </Form.Item>
             <Form.Item name="sort_order" label="Сортировка" initialValue={0} style={{ width: 100 }}>
               <InputNumber style={{ width: '100%' }} />
@@ -426,6 +633,7 @@ export const ProductsPage = () => {
           columns={sizeColumns}
           rowKey="id"
           size="small"
+          pagination={false}
         />
       </Drawer>
 
@@ -433,7 +641,7 @@ export const ProductsPage = () => {
         title="Доступность на точках"
         open={availabilityOpen}
         onClose={() => setAvailabilityOpen(false)}
-        destroyOnHidden
+        destroyOnClose
         extra={
           <Button
             type="primary"
@@ -455,9 +663,7 @@ export const ProductsPage = () => {
           <Typography.Text>Загрузка...</Typography.Text>
         ) : (
           <Space direction="vertical" style={{ width: '100%' }}>
-            <Typography.Text type="secondary">
-              Выберите точки, на которых доступен товар:
-            </Typography.Text>
+            <Typography.Text type="secondary">Выберите точки, на которых доступен товар:</Typography.Text>
             {(storeLocations || []).map((store: any) => (
               <div
                 key={store.id}
@@ -495,5 +701,3 @@ export const ProductsPage = () => {
     </>
   )
 }
-
-
