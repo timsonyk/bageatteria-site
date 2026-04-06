@@ -160,14 +160,18 @@ export function LocationSelector({
         </button>
 
         {/* Dropdown Menu */}
-        {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
-            <div className="px-4 py-2.5 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-700">Выберите точку</span>
-            </div>
-            <LocationList />
+        <div
+          className={`absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50 transition-all duration-200 origin-top-right ${
+            isOpen
+              ? "opacity-100 scale-100 pointer-events-auto"
+              : "opacity-0 scale-95 pointer-events-none"
+          }`}
+        >
+          <div className="px-4 py-2.5 border-b border-gray-100">
+            <span className="text-sm font-medium text-gray-700">Выберите точку</span>
           </div>
-        )}
+          <LocationList />
+        </div>
       </div>
 
       {/* Initial Selection Modal (can't be closed without selection) - only in legacy mode */}
