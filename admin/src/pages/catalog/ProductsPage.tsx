@@ -231,6 +231,7 @@ export const ProductsPage = () => {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Local state for optimistic reordering
   const [localProducts, setLocalProducts] = useState<Product[]>([])
@@ -268,13 +269,20 @@ export const ProductsPage = () => {
     return [...categories].sort((a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
   }, [categories])
 
+  // Filter products by search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return localProducts
+    const query = searchQuery.toLowerCase().trim()
+    return localProducts.filter((p) => p.name.toLowerCase().includes(query))
+  }, [localProducts, searchQuery])
+
   // Group products by category
   const productsByCategory = useMemo(() => {
     const grouped: Record<number, Product[]> = {}
     for (const cat of sortedCategories) {
       grouped[cat.id] = []
     }
-    for (const product of localProducts) {
+    for (const product of filteredProducts) {
       if (grouped[product.category_id]) {
         grouped[product.category_id].push(product)
       }
@@ -284,7 +292,7 @@ export const ProductsPage = () => {
       grouped[Number(catId)].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     }
     return grouped
-  }, [localProducts, sortedCategories])
+  }, [filteredProducts, sortedCategories])
 
   const saveProduct = useMutation({
     mutationFn: async (values: any) => {
@@ -473,19 +481,36 @@ export const ProductsPage = () => {
 
   return (
     <>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} align="center">
         <Button type="primary" onClick={openCreate}>
           Новый товар
         </Button>
+        <Input.Search
+          placeholder="Поиск по названию..."
+          allowClear
+          style={{ width: 300 }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </Space>
 
-      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-        Перетаскивайте товары для изменения порядка
-      </Typography.Text>
+      {!searchQuery ? (
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          Перетаскивайте товары для изменения порядка
+        </Typography.Text>
+      ) : (
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          Найдено: {filteredProducts.length} {filteredProducts.length === 1 ? 'товар' : filteredProducts.length < 5 ? 'товара' : 'товаров'}
+        </Typography.Text>
+      )}
 
-      {sortedCategories.map((category: Category) => (
-        <CategoryGroup
-          key={category.id}
+      {sortedCategories.map((category: Category) => {
+        const categoryProducts = productsByCategory[category.id] || []
+        // Скрываем пустые категории при поиске
+        if (searchQuery && categoryProducts.length === 0) return null
+        return (
+          <CategoryGroup
+            key={category.id}
           category={category}
           products={productsByCategory[category.id] || []}
           onReorder={handleReorder}
@@ -495,7 +520,8 @@ export const ProductsPage = () => {
           onDelete={handleDelete}
           onToggleActive={handleToggleActive}
         />
-      ))}
+        )
+      })}
 
       <Modal
         open={open}
