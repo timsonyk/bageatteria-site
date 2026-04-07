@@ -11,12 +11,14 @@ class AdminLoginRequest(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str
+    unit: Optional[str] = None  # г, кг, мл
     sort_order: int = 0
     is_active: bool = True
 
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
+    unit: Optional[str] = None  # г, кг, мл
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
 
@@ -313,13 +315,18 @@ class CategoryAvailabilityBulkUpdate(BaseModel):
     store_location_ids: List[int]  # List of store location IDs where category is available
 
 
-class ProductSortOrderItem(BaseModel):
+class SortOrderItem(BaseModel):
     id: int
     sort_order: int
 
 
 class ProductSortOrderBulkUpdate(BaseModel):
     """Bulk update sort_order for products"""
-    items: List[ProductSortOrderItem]
+    items: List[SortOrderItem]
+
+
+class CategorySortOrderBulkUpdate(BaseModel):
+    """Bulk update sort_order for categories"""
+    items: List[SortOrderItem]
 
 

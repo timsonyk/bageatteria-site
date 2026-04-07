@@ -81,6 +81,30 @@ def delete_category(category_id: int, db: Session = Depends(get_db), user=Depend
     return {"deleted": True}
 
 
+@router.post("/categories/bulk_sort")
+def bulk_update_category_sort_order(
+    payload: admin_schemas.CategorySortOrderBulkUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Bulk update sort_order for categories"""
+    if not payload.items:
+        return {"updated": 0}
+
+    category_ids = [item.id for item in payload.items]
+    categories = db.query(cat_models.Category).filter(cat_models.Category.id.in_(category_ids)).all()
+    categories_map = {c.id: c for c in categories}
+
+    updated = 0
+    for item in payload.items:
+        if item.id in categories_map:
+            categories_map[item.id].sort_order = item.sort_order
+            updated += 1
+
+    db.commit()
+    return {"updated": updated}
+
+
 @router.get("/products")
 def list_products(category_id: Optional[int] = None, db: Session = Depends(get_db), user=Depends(get_admin_user)):
     q = db.query(cat_models.Product)

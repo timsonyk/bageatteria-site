@@ -61,6 +61,7 @@ interface Product {
 interface Category {
   id: number
   name: string
+  unit?: string
   sort_order: number
   is_active: boolean
 }
@@ -228,6 +229,7 @@ export const ProductsPage = () => {
   const { data: products, isLoading } = useQuery({ queryKey: ['products'], queryFn: fetchProducts })
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
   const [form] = Form.useForm()
+  const selectedCategoryId = Form.useWatch('category_id', form)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [fileList, setFileList] = useState<UploadFile[]>([])
@@ -268,6 +270,13 @@ export const ProductsPage = () => {
     if (!categories) return []
     return [...categories].sort((a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
   }, [categories])
+
+  // Get selected category unit
+  const selectedCategoryUnit = useMemo(() => {
+    if (!selectedCategoryId || !categories) return null
+    const cat = categories.find((c: Category) => c.id === selectedCategoryId)
+    return cat?.unit || null
+  }, [selectedCategoryId, categories])
 
   // Filter products by search query
   const filteredProducts = useMemo(() => {
@@ -556,8 +565,17 @@ export const ProductsPage = () => {
             <Input placeholder="S / M / L / XL" />
           </Form.Item>
           <Space style={{ width: '100%' }}>
-            <Form.Item name="weight" label="Вес / Объём" style={{ flex: 1 }}>
-              <Input placeholder="400 г или 300 мл" />
+            <Form.Item
+              name="weight"
+              label={selectedCategoryUnit ? `Вес / Объём (${selectedCategoryUnit})` : "Вес / Объём"}
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                placeholder={selectedCategoryUnit ? `Введите число` : "400"}
+                addonAfter={selectedCategoryUnit || undefined}
+              />
             </Form.Item>
             <Form.Item name="calories" label="Калории (ккал)" style={{ flex: 1 }}>
               <InputNumber style={{ width: '100%' }} min={0} placeholder="713" />

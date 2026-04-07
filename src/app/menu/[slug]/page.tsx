@@ -213,7 +213,7 @@ export default function MenuSlugPage() {
                   <h2 className="text-[22px] font-bold text-black mb-4">
                     {category.name}
                   </h2>
-                  <ProductGrid products={categoryProducts} onProductClick={handleProductClick} />
+                  <ProductGrid products={categoryProducts} categoryUnit={category.unit} onProductClick={handleProductClick} />
                 </section>
               );
             })}
@@ -227,6 +227,7 @@ export default function MenuSlugPage() {
         onClose={handleCloseModal}
         product={selectedProduct}
         products={products}
+        categories={categories}
         onProductChange={handleProductChange}
       />
     </div>

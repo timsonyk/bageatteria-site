@@ -35,6 +35,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
+    unit = Column(String(10), nullable=True)  # г, кг, мл
     sort_order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 

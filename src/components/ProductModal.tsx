@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
-import { Product } from "@/lib/types";
+import { Product, Category } from "@/lib/types";
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
   products: Product[];
+  categories: Category[];
   onProductChange: (product: Product) => void;
 }
 
@@ -16,12 +17,25 @@ interface ProductModalProps {
 function ProductCard({
   product,
   getImageUrl,
+  categoryUnit,
 }: {
   product: Product;
   getImageUrl: (p: Product) => string;
+  categoryUnit?: string;
 }) {
   const imageUrl = getImageUrl(product);
   const price = parseFloat(product.base_price);
+
+  // Формируем строку веса с единицей измерения
+  const weightDisplay = useMemo(() => {
+    if (!product.weight) return null;
+    // Если в weight уже есть единица (старый формат), показываем как есть
+    if (typeof product.weight === 'string' && /[а-яa-z]/i.test(product.weight)) {
+      return product.weight;
+    }
+    // Иначе добавляем единицу из категории
+    return categoryUnit ? `${product.weight} ${categoryUnit}` : product.weight;
+  }, [product.weight, categoryUnit]);
 
   return (
     <div className="w-full flex-shrink-0">
@@ -46,8 +60,8 @@ function ProductCard({
           <span className="text-[20px] font-semibold text-black">
             {price.toLocaleString("ru-RU")} ₽
           </span>
-          {product.weight && (
-            <span className="text-[14px] text-[#8E8E93]">{product.weight}</span>
+          {weightDisplay && (
+            <span className="text-[14px] text-[#8E8E93]">{weightDisplay}</span>
           )}
         </div>
 
@@ -113,8 +127,17 @@ export function ProductModal({
   onClose,
   product,
   products,
+  categories,
   onProductChange,
 }: ProductModalProps) {
+  // Создаём карту категорий для быстрого доступа к unit
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    for (const cat of categories) {
+      map.set(cat.id, cat);
+    }
+    return map;
+  }, [categories]);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -525,7 +548,7 @@ export function ProductModal({
                 ref={position === 0 ? scrollContainerRef : undefined}
                 className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               >
-                <ProductCard product={p} getImageUrl={getImageUrl} />
+                <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} />
               </div>
             ))}
           </div>

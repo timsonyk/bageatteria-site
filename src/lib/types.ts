@@ -2,6 +2,7 @@
 export interface Category {
   id: number;
   name: string;
+  unit?: string;  // г, кг, мл
   sort_order: number;
   is_active: boolean;
 }

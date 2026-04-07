@@ -1,14 +1,16 @@
 "use client";
 
+import { useMemo } from "react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
 
 interface ProductCardProps {
   product: Product;
+  categoryUnit?: string;
   onClick?: () => void;
 }
 
-export function ProductCard({ product, onClick }: ProductCardProps) {
+export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps) {
   const mediaItem = product.media?.[0];
   // media может быть массивом строк или объектов с url
   const mediaUrl = typeof mediaItem === 'string' ? mediaItem : mediaItem?.url;
@@ -24,6 +26,17 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
     }
   }
   const price = parseFloat(product.base_price);
+
+  // Формируем строку веса с единицей измерения
+  const weightDisplay = useMemo(() => {
+    if (!product.weight) return null;
+    // Если в weight уже есть единица (старый формат), показываем как есть
+    if (typeof product.weight === 'string' && /[а-яa-z]/i.test(product.weight)) {
+      return product.weight;
+    }
+    // Иначе добавляем единицу из категории
+    return categoryUnit ? `${product.weight} ${categoryUnit}` : product.weight;
+  }, [product.weight, categoryUnit]);
 
   return (
     <div className="flex flex-col cursor-pointer" onClick={onClick}>
@@ -52,10 +65,10 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         </span>
 
         {/* Вес и калории */}
-        {(product.weight || product.calories) && (
+        {(weightDisplay || product.calories) && (
           <p className="text-[13px] text-[#8E8E93] leading-snug mt-0.5">
             {[
-              product.weight,
+              weightDisplay,
               product.calories ? `${product.calories} ккал` : null
             ].filter(Boolean).join(' · ')}
           </p>

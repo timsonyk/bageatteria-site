@@ -189,7 +189,7 @@ export default function MenuPage() {
                   <h2 className="text-[22px] font-bold text-black mb-4">
                     {category.name}
                   </h2>
-                  <ProductGrid products={categoryProducts} onProductClick={handleProductClick} />
+                  <ProductGrid products={categoryProducts} categoryUnit={category.unit} onProductClick={handleProductClick} />
                 </section>
               );
             })}
@@ -203,6 +203,7 @@ export default function MenuPage() {
         onClose={handleCloseModal}
         product={selectedProduct}
         products={sortedProducts}
+        categories={categories}
         onProductChange={handleProductChange}
       />
     </div>
