@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class CategoryOut(BaseModel):
     id: int
     name: str
+    unit: Optional[str] = None
     sort_order: int
     is_active: bool
 

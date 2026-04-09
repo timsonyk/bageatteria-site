@@ -20,6 +20,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      DB_HOST: db
     depends_on:
       - db
     ports:
@@ -36,6 +38,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      DB_HOST: db
     depends_on:
       - db
       - backend

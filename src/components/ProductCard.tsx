@@ -25,10 +25,21 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
       imageUrl = `${MEDIA_URL}${mediaUrl}`;
     }
   }
-  const price = parseFloat(product.base_price);
+  const hasSizes = product.sizes && product.sizes.length > 0;
+  const defaultSize = useMemo(() => {
+    if (!hasSizes) return null;
+    const sorted = [...product.sizes!].sort((a, b) => a.sort_order - b.sort_order);
+    const idx = sorted.length >= 3 ? 1 : 0;
+    return sorted[idx];
+  }, [hasSizes, product.sizes]);
+  const price = defaultSize ? parseFloat(defaultSize.base_price) : parseFloat(product.base_price);
 
   // Формируем строку веса с единицей измерения
   const weightDisplay = useMemo(() => {
+    // Если есть размеры — берём volume из дефолтного размера
+    if (defaultSize?.volume) {
+      return categoryUnit ? `${defaultSize.volume} ${categoryUnit}` : defaultSize.volume;
+    }
     if (!product.weight) return null;
     // Если в weight уже есть единица (старый формат), показываем как есть
     if (typeof product.weight === 'string' && /[а-яa-z]/i.test(product.weight)) {
@@ -36,7 +47,7 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
     }
     // Иначе добавляем единицу из категории
     return categoryUnit ? `${product.weight} ${categoryUnit}` : product.weight;
-  }, [product.weight, categoryUnit]);
+  }, [product.weight, categoryUnit, defaultSize]);
 
   return (
     <div className="flex flex-col cursor-pointer" onClick={onClick}>

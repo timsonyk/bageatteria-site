@@ -546,7 +546,9 @@ export const ProductsPage = () => {
           initialValues={{ is_active: true, sort_order: 0 }}
           onFinish={(values) => {
             const mediaUrls = fileList.map((f) => (f.response as any)?.url || f.url).filter(Boolean)
-            saveProduct.mutate({ ...values, media: mediaUrls })
+            const payload = { ...values, media: mediaUrls }
+            if (payload.weight != null) payload.weight = String(payload.weight)
+            saveProduct.mutate(payload)
           }}
         >
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>

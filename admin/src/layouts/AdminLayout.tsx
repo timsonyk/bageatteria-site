@@ -5,6 +5,7 @@ import {
   SettingOutlined,
   SunOutlined,
   MoonOutlined,
+  SlidersFilled,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLogout } from '../hooks/useAuth'
@@ -16,7 +17,7 @@ const menuItems = [
   // { key: '/', icon: <AppstoreOutlined />, label: <Link to="/">Главная</Link> },
   { key: '/catalog/categories', icon: <ShopOutlined />, label: <Link to="/catalog/categories">Категории</Link> },
   { key: '/catalog/products', icon: <TagsOutlined />, label: <Link to="/catalog/products">Товары</Link> },
-  // { key: '/catalog/modifications', label: <Link to="/catalog/modifications">Модификации</Link> },
+  { key: '/catalog/modifications', icon: <SlidersFilled />, label: <Link to="/catalog/modifications">Модификации</Link> },
   // { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации</Link> },
   { key: '/settings/store-locations', icon: <SettingOutlined />, label: <Link to="/settings/store-locations">Адреса магазинов</Link> },
   // {

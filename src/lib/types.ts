@@ -40,6 +40,7 @@ export interface Product {
   media: MediaItem[] | null;
   sort_order: number;
   sizes?: ProductSize[];
+  modification_groups?: ModificationGroup[];
 }
 
 // Точка (магазин)

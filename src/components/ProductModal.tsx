@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import Image from "next/image";
-import { Product, Category } from "@/lib/types";
+import { Product, Category, ModificationGroup, ModificationOption } from "@/lib/types";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -24,10 +24,83 @@ function ProductCard({
   categoryUnit?: string;
 }) {
   const imageUrl = getImageUrl(product);
-  const price = parseFloat(product.base_price);
+  const sortedSizes = useMemo(() => {
+    if (!product.sizes || product.sizes.length === 0) return [];
+    return [...product.sizes].sort((a, b) => a.sort_order - b.sort_order).slice(0, 3);
+  }, [product.sizes]);
+  const defaultSizeIndex = sortedSizes.length >= 3 ? 1 : 0;
+  const [selectedSizeIndex, setSelectedSizeIndex] = useState(defaultSizeIndex);
+  const sizeButtonsRef = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const [sizeIndicator, setSizeIndicator] = useState({ left: 0, width: 0 });
+
+  useLayoutEffect(() => {
+    const btn = sizeButtonsRef.current.get(selectedSizeIndex);
+    if (btn) {
+      setSizeIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    }
+  }, [selectedSizeIndex, sortedSizes]);
+
+  // Modifications
+  const modGroups = useMemo(() => {
+    if (!product.modification_groups || product.modification_groups.length === 0) return [];
+    return [...product.modification_groups]
+      .filter(g => g.is_active)
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(g => ({
+        ...g,
+        options: g.options.filter(o => o.is_active).sort((a, b) => a.sort_order - b.sort_order),
+      }));
+  }, [product.modification_groups]);
+
+  const [selectedOptions, setSelectedOptions] = useState<Set<number>>(() => {
+    const defaults = new Set<number>();
+    modGroups.forEach(g => g.options.forEach(o => { if (o.is_default) defaults.add(o.id); }));
+    return defaults;
+  });
+
+  const toggleOption = useCallback((group: ModificationGroup, option: ModificationOption) => {
+    setSelectedOptions(prev => {
+      const next = new Set(prev);
+      if (group.type === "single") {
+        // Убираем все опции этой группы, ставим новую
+        group.options.forEach(o => next.delete(o.id));
+        next.add(option.id);
+      } else {
+        // multiple: toggle
+        if (next.has(option.id)) {
+          next.delete(option.id);
+        } else {
+          // Проверяем max_count
+          const selectedInGroup = group.options.filter(o => next.has(o.id)).length;
+          if (selectedInGroup < group.max_count) {
+            next.add(option.id);
+          }
+        }
+      }
+      return next;
+    });
+  }, [modGroups]);
+
+  const modsExtra = useMemo(() => {
+    let sum = 0;
+    modGroups.forEach(g => g.options.forEach(o => {
+      if (selectedOptions.has(o.id)) sum += parseFloat(o.extra_price);
+    }));
+    return sum;
+  }, [modGroups, selectedOptions]);
+
+  const hasSizes = sortedSizes.length > 0;
+  const basePrice = hasSizes
+    ? parseFloat(sortedSizes[selectedSizeIndex]?.base_price ?? product.base_price)
+    : parseFloat(product.base_price);
+  const price = basePrice + modsExtra;
 
   // Формируем строку веса с единицей измерения
   const weightDisplay = useMemo(() => {
+    // Если выбран размер с volume, показываем его
+    if (hasSizes && sortedSizes[selectedSizeIndex]?.volume) {
+      return sortedSizes[selectedSizeIndex].volume;
+    }
     if (!product.weight) return null;
     // Если в weight уже есть единица (старый формат), показываем как есть
     if (typeof product.weight === 'string' && /[а-яa-z]/i.test(product.weight)) {
@@ -35,7 +108,7 @@ function ProductCard({
     }
     // Иначе добавляем единицу из категории
     return categoryUnit ? `${product.weight} ${categoryUnit}` : product.weight;
-  }, [product.weight, categoryUnit]);
+  }, [product.weight, categoryUnit, hasSizes, sortedSizes, selectedSizeIndex]);
 
   return (
     <div className="w-full flex-shrink-0">
@@ -56,11 +129,57 @@ function ProductCard({
       <div className="px-4 pt-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         <h2 className="text-[22px] font-bold text-black">{product.name}</h2>
 
-        <div className="flex items-baseline gap-3 mt-2">
+        {/* Size Selector */}
+        {hasSizes && (
+          <div className="mt-3">
+            <div className="relative bg-[#F2F2F7] rounded-[10px] p-1 flex">
+              {/* Animated indicator */}
+              <div
+                className="absolute top-1 bottom-1 bg-white rounded-[8px] transition-all duration-300 ease-out"
+                style={{
+                  left: sizeIndicator.left,
+                  width: sizeIndicator.width,
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                }}
+              />
+              {sortedSizes.map((size, index) => {
+                const isSelected = index === selectedSizeIndex;
+                return (
+                  <button
+                    key={size.id}
+                    ref={(el) => { if (el) sizeButtonsRef.current.set(index, el); }}
+                    onClick={() => setSelectedSizeIndex(index)}
+                    className="relative z-10 flex-1 flex flex-col items-center justify-center py-2.5"
+                  >
+                    <span
+                      className="text-[20px] transition-colors duration-200"
+                      style={{
+                        fontWeight: isSelected ? 600 : 500,
+                        color: isSelected ? '#000000' : '#8E8E93',
+                      }}
+                    >
+                      {size.name}
+                    </span>
+                    {size.volume && (
+                      <span
+                        className="text-[11px] mt-0.5 transition-colors duration-200"
+                        style={{ color: '#8E8E93' }}
+                      >
+                        {size.volume}{categoryUnit ? ` ${categoryUnit}` : ''}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-baseline gap-3 mt-2 ml-1">
           <span className="text-[20px] font-semibold text-black">
             {price.toLocaleString("ru-RU")} ₽
           </span>
-          {weightDisplay && (
+          {weightDisplay && sortedSizes.length <= 1 && (
             <span className="text-[14px] text-[#8E8E93]">{weightDisplay}</span>
           )}
         </div>
@@ -69,7 +188,7 @@ function ProductCard({
         {product.description && (
           <div className="mt-3">
             <h3 className="text-[14px] font-semibold text-black mb-1">Описание</h3>
-            <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+            <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line break-words overflow-hidden">
               {product.description}
             </p>
           </div>
@@ -115,6 +234,69 @@ function ProductCard({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Модификации */}
+        {modGroups.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            {modGroups.map(group => (
+              <div key={group.id} className="mb-4 last:mb-0">
+                <h3 className="text-[14px] font-semibold text-black mb-2">{group.name}</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {group.options.map(option => {
+                    const isSelected = selectedOptions.has(option.id);
+                    const extraPrice = parseFloat(option.extra_price);
+                    const imgUrl = option.image_url
+                      ? (option.image_url.startsWith('http') ? option.image_url : `${process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:8000'}${option.image_url}`)
+                      : null;
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => toggleOption(group, option)}
+                        className="flex flex-col items-center rounded-[14px] p-2 pb-3 transition-all duration-200"
+                        style={{
+                          backgroundColor: isSelected ? '#FFFFFF' : '#F2F2F7',
+                          boxShadow: isSelected ? '0 0 0 2px #8E8E93' : 'none',
+                        }}
+                      >
+                        {imgUrl && (
+                          <div className="relative w-full aspect-square mb-1.5 rounded-[10px] overflow-hidden">
+                            <Image
+                              src={imgUrl}
+                              alt={option.name}
+                              fill
+                              className="object-contain"
+                              sizes="100px"
+                              unoptimized
+                            />
+                          </div>
+                        )}
+                        <span className="text-[12px] text-center leading-tight text-black" style={{ fontWeight: isSelected ? 600 : 400 }}>
+                          {option.name}
+                        </span>
+                        {extraPrice > 0 && (
+                          <span className="text-[11px] text-[#8E8E93] mt-0.5">
+                            +{extraPrice.toLocaleString("ru-RU")} ₽
+                          </span>
+                        )}
+                        <div className="mt-1.5 w-5 h-5 flex items-center justify-center">
+                          {isSelected ? (
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                              <path d="M5 9l3 3 5-5" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                              <path d="M9 4v10M4 9h10" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
