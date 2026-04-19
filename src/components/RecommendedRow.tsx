@@ -5,7 +5,6 @@ import { Heart } from "lucide-react";
 import { MouseEvent } from "react";
 import { Product } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
-import { getDefaultVariant } from "@/lib/favorites";
 
 interface RecommendedRowProps {
   products: Product[];
@@ -27,8 +26,9 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
 
   const handleAdd = (e: MouseEvent, p: Product) => {
     e.stopPropagation();
-    const { sizeId, optionIds } = getDefaultVariant(p);
-    addVariant(p.id, sizeId, optionIds);
+    // Из рекомендаций добавляем «голый» вариант — без модификаций и без размера,
+    // чтобы цена совпадала с отображаемой, а в избранном не появлялись модификаторы.
+    addVariant(p.id, null, []);
   };
 
   return (
