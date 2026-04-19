@@ -49,9 +49,9 @@ export function CategoryTabs({ categories, activeId, onSelect }: CategoryTabsPro
       className="sticky top-0 z-20 bg-background py-3 -mx-2.5 px-2.5 overflow-x-auto scrollbar-hide"
     >
       <div className="relative flex gap-2">
-        {/* Анимированный индикатор */}
+        {/* Анимированный индикатор (подчёркивание) */}
         <div
-          className="absolute top-0 h-full bg-[#F2F2F7] rounded-full transition-all duration-300 ease-out"
+          className="absolute bottom-0 h-[2px] bg-black rounded-full transition-all duration-300 ease-out"
           style={{
             left: indicatorStyle.left,
             width: indicatorStyle.width,
@@ -70,8 +70,8 @@ export function CategoryTabs({ categories, activeId, onSelect }: CategoryTabsPro
               }}
               onClick={() => onSelect(category.id)}
               className={cn(
-                "relative z-10 flex-shrink-0 px-4 py-2 rounded-full text-base whitespace-nowrap border-0 outline-none bg-transparent text-black",
-                isActive ? "font-medium" : "font-normal"
+                "relative z-10 flex-shrink-0 px-4 py-2 text-base whitespace-nowrap border-0 outline-none bg-transparent transition-colors duration-200",
+                isActive ? "font-medium text-black" : "font-normal text-[#8E8E93]"
               )}
             >
               {category.name}

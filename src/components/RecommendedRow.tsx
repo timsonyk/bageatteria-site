@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
+import { MouseEvent } from "react";
 import { Product } from "@/lib/types";
-import { FavoriteButton } from "./FavoriteButton";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { getDefaultVariant } from "@/lib/favorites";
 
 interface RecommendedRowProps {
   products: Product[];
@@ -20,51 +22,86 @@ function productImage(p: Product): string {
 }
 
 export function RecommendedRow({ products, onProductClick }: RecommendedRowProps) {
+  const { addVariant } = useFavorites();
   if (products.length === 0) return null;
+
+  const handleAdd = (e: MouseEvent, p: Product) => {
+    e.stopPropagation();
+    const { sizeId, optionIds } = getDefaultVariant(p);
+    addVariant(p.id, sizeId, optionIds);
+  };
 
   return (
     <section className="mt-1 mb-6">
       <div className="flex items-end justify-between px-1.5 mb-3">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="w-[18px] h-[18px] text-black" strokeWidth={1.75} />
-          <h2 className="text-[22px] font-bold text-black leading-none">Рекомендуем</h2>
-        </div>
+        <h2 className="text-[22px] font-bold text-[#1A1410] leading-none">Рекомендуем</h2>
         <span className="text-[13px] text-[#8E8E93] leading-none pb-0.5">подобрано для вас</span>
       </div>
+
       <div
-        className="flex gap-2.5 overflow-x-auto snap-x -mx-2.5 px-2.5 pb-1"
-        style={{ scrollbarWidth: "none" }}
+        className="-mx-2.5 [&::-webkit-scrollbar]:hidden"
+        style={{
+          display: "flex",
+          gap: 10,
+          padding: "0 20px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          scrollSnapType: "x mandatory",
+        }}
       >
         {products.map((p) => {
           const price = parseFloat(p.base_price);
           return (
             <div
               key={p.id}
-              className="flex-shrink-0 w-[158px] snap-start cursor-pointer active:scale-[0.98] transition-transform"
               onClick={() => onProductClick(p)}
+              style={{
+                flex: "0 0 150px",
+                background: "#FFFEFA",
+                borderRadius: 16,
+                padding: 10,
+                scrollSnapAlign: "start",
+              }}
+              className="cursor-pointer active:scale-[0.98] transition-transform"
             >
-              <div className="relative aspect-square bg-[#EAEAEA] rounded-[16px]">
-                <div className="absolute inset-0 overflow-hidden rounded-[16px]">
-                  <Image
-                    src={productImage(p)}
-                    alt={p.name}
-                    fill
-                    sizes="160px"
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-                <div className="absolute bottom-2 right-2 z-10">
-                  <FavoriteButton product={p} />
-                </div>
+              <div
+                className="relative bg-[#EAEAEA]"
+                style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "1 / 0.85" }}
+              >
+                <Image
+                  src={productImage(p)}
+                  alt={p.name}
+                  fill
+                  sizes="150px"
+                  className="object-cover"
+                  unoptimized
+                />
               </div>
-              <div className="mt-2 pl-1 pr-1">
-                <h3 className="text-[14px] font-medium text-black leading-tight line-clamp-2 min-h-[34px]">
-                  {p.name}
-                </h3>
-                <span className="text-[13px] text-black mt-1 block">
+              <div
+                className="mt-2 line-clamp-2"
+                style={{ fontSize: 13, fontWeight: 500, color: "#1A1410", lineHeight: 1.2, minHeight: 32 }}
+              >
+                {p.name}
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span style={{ fontSize: 13, color: "#1A1410", fontWeight: 500 }}>
                   {price.toLocaleString("ru-RU")} ₽
                 </span>
+                <button
+                  type="button"
+                  aria-label="Добавить в избранное"
+                  onClick={(e) => handleAdd(e, p)}
+                  className="flex items-center justify-center active:scale-[0.9] transition-transform"
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 13,
+                    background: "#1A1410",
+                    color: "#FFFEFA",
+                  }}
+                >
+                  <Plus className="w-[14px] h-[14px]" strokeWidth={2.25} />
+                </button>
               </div>
             </div>
           );

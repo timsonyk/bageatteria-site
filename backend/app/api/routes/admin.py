@@ -907,10 +907,8 @@ async def upload_file(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # Build a public URL using BASE_URL from settings
-    base = str(settings.base_url).rstrip("/")
-
-    url = f"{base}/uploads/{filename}"
+    # Return relative URL; host is applied at display time (public API normalizes, admin prepends).
+    url = f"/uploads/{filename}"
     return {"url": url, "filename": filename}
 
 

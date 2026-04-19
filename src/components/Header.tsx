@@ -6,7 +6,7 @@ interface HeaderProps {
 
 export function Header({ rightElement }: HeaderProps) {
   return (
-    <header className="bg-background border-b border-border">
+    <header className="bg-background">
       <div className="flex items-center justify-between h-14 px-4">
         <Image
           src="/logo.svg"

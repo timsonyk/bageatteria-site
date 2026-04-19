@@ -43,6 +43,23 @@ const fetchCategories = async () => (await api.get('/admin/categories')).data
 const fetchSizes = async (productId?: number) =>
   (await api.get('/admin/product_sizes', { params: productId ? { product_id: productId } : {} })).data
 const fetchStoreLocations = async () => (await api.get('/admin/store_locations')).data
+
+const API_HOST = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000'
+
+/** Для отображения в админке: относительный путь превращаем в полный URL. */
+function toDisplayUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith('http')) return url
+  return `${API_HOST}${url}`
+}
+
+/** Для сохранения в БД: храним только относительный путь /uploads/xxx. */
+function toStoredUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith(API_HOST)) return url.slice(API_HOST.length)
+  const m = url.match(/\/uploads\/[^?#]+/)
+  return m ? m[0] : url
+}
 const fetchProductAvailability = async (productId: number) =>
   (await api.get('/admin/product_availability', { params: { product_id: productId } })).data
 
@@ -93,11 +110,7 @@ function SortableProductRow({
   }
 
   const imageUrl = product.media?.[0]
-  const fullImageUrl = imageUrl
-    ? imageUrl.startsWith('http')
-      ? imageUrl
-      : `${import.meta.env.VITE_API_URL || ''}${imageUrl}`
-    : null
+  const fullImageUrl = imageUrl ? toDisplayUrl(imageUrl) : null
 
   return (
     <div
@@ -394,7 +407,7 @@ export const ProductsPage = () => {
             uid: `${idx}`,
             name: url.split('/').pop() || `изображение-${idx}`,
             status: 'done' as const,
-            url,
+            url: toDisplayUrl(url),
           }))
         )
       } else {
@@ -545,7 +558,10 @@ export const ProductsPage = () => {
           form={form}
           initialValues={{ is_active: true, sort_order: 0, is_recommended_menu: false, is_recommended_favorites: false, is_featured_menu: false }}
           onFinish={(values) => {
-            const mediaUrls = fileList.map((f) => (f.response as any)?.url || f.url).filter(Boolean)
+            const mediaUrls = fileList
+              .map((f) => (f.response as any)?.url || f.url)
+              .filter(Boolean)
+              .map(toStoredUrl)
             const payload = { ...values, media: mediaUrls }
             if (payload.weight != null) payload.weight = String(payload.weight)
             saveProduct.mutate(payload)
@@ -610,7 +626,7 @@ export const ProductsPage = () => {
                   const res = await api.post('/admin/upload', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                   })
-                  const url = res.data.url
+                  const url = toDisplayUrl(res.data.url)
                   onSuccess?.(res.data, file as any)
                   setFileList((prev) =>
                     prev.map((f) => (f.uid === (file as UploadFile).uid ? { ...f, url, status: 'done' } : f))

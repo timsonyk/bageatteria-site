@@ -253,7 +253,7 @@ export default function MenuPage() {
 
               return (
                 <section key={category.id} id={`category-${category.id}`} className="scroll-mt-20">
-                  <h2 className="text-[22px] font-bold text-black mb-4">
+                  <h2 className="text-[28px] font-normal text-black tracking-[-0.6px] leading-none mb-4">
                     {category.name}
                   </h2>
                   <ProductGrid products={categoryProducts} categoryUnit={category.unit} onProductClick={handleProductClick} />
