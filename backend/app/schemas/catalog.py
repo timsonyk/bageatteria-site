@@ -70,6 +70,7 @@ class ProductOut(BaseModel):
     is_recommended_menu: bool = False
     is_recommended_favorites: bool = False
     is_featured_menu: bool = False
+    featured_text: Optional[str] = None
     media: Optional[list] = None
     sort_order: int
     sizes: List[ProductSizeOut] = []

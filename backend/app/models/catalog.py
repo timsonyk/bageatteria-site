@@ -61,6 +61,7 @@ class Product(Base):
     is_recommended_menu = Column(Boolean, default=False, nullable=False)
     is_recommended_favorites = Column(Boolean, default=False, nullable=False)
     is_featured_menu = Column(Boolean, default=False, nullable=False)
+    featured_text = Column(Text, nullable=True)
     media = Column(JSON, nullable=True)
     sort_order = Column(Integer, default=0, nullable=False)
 

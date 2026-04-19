@@ -40,6 +40,7 @@ export interface Product {
   is_recommended_menu?: boolean;
   is_recommended_favorites?: boolean;
   is_featured_menu?: boolean;
+  featured_text?: string | null;
   media: MediaItem[] | null;
   sort_order: number;
   sizes?: ProductSize[];

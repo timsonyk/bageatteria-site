@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Select, Space, Typography, message } from 'antd'
+import { Button, Card, Input, Select, Space, Typography, message } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 
@@ -12,6 +12,7 @@ interface Product {
   is_recommended_menu: boolean
   is_recommended_favorites: boolean
   is_featured_menu: boolean
+  featured_text?: string | null
 }
 
 interface Category {
@@ -36,13 +37,26 @@ export const HighlightsPage = () => {
   const [menuRec, setMenuRec] = useState<number[]>([])
   const [favRec, setFavRec] = useState<number[]>([])
   const [featured, setFeatured] = useState<number | null>(null)
+  const [featuredText, setFeaturedText] = useState<string>('')
 
   useEffect(() => {
     if (!products) return
     setMenuRec(products.filter((p) => p.is_recommended_menu).map((p) => p.id))
     setFavRec(products.filter((p) => p.is_recommended_favorites).map((p) => p.id))
-    setFeatured(products.find((p) => p.is_featured_menu)?.id ?? null)
+    const f = products.find((p) => p.is_featured_menu) ?? null
+    setFeatured(f?.id ?? null)
+    setFeaturedText(f?.featured_text ?? '')
   }, [products])
+
+  useEffect(() => {
+    if (!products) return
+    if (featured === null) {
+      setFeaturedText('')
+      return
+    }
+    const p = products.find((x) => x.id === featured)
+    setFeaturedText(p?.featured_text ?? '')
+  }, [featured, products])
 
   const productOptions = useMemo(() => {
     if (!products || !categories) return []
@@ -90,7 +104,14 @@ export const HighlightsPage = () => {
   })
 
   const saveFeatured = useMutation({
-    mutationFn: () => syncFlag('is_featured_menu', featured !== null ? [featured] : []),
+    mutationFn: async () => {
+      await syncFlag('is_featured_menu', featured !== null ? [featured] : [])
+      if (featured !== null) {
+        await api.put(`/admin/products/${featured}`, {
+          featured_text: featuredText.trim() ? featuredText : null,
+        })
+      }
+    },
     onSuccess: () => {
       message.success('Сохранено')
       qc.invalidateQueries({ queryKey: ['products'] })
@@ -111,6 +132,13 @@ export const HighlightsPage = () => {
     () => (products ?? []).find((p) => p.is_featured_menu)?.id ?? null,
     [products]
   )
+  const initialFeaturedText = useMemo(() => {
+    const p = (products ?? []).find((x) => x.id === initialFeatured)
+    return p?.featured_text ?? ''
+  }, [products, initialFeatured])
+  const featuredChanged =
+    featured !== initialFeatured ||
+    (featured !== null && featuredText !== initialFeaturedText)
 
   const sameSet = (a: number[], b: number[]) =>
     a.length === b.length && a.every((x) => b.includes(x))
@@ -161,7 +189,7 @@ export const HighlightsPage = () => {
             type="primary"
             size="small"
             loading={saveFeatured.isPending}
-            disabled={featured === initialFeatured}
+            disabled={!featuredChanged}
             onClick={() => saveFeatured.mutate()}
           >
             Сохранить
@@ -181,6 +209,21 @@ export const HighlightsPage = () => {
           showSearch
           allowClear
         />
+        {featured !== null && (
+          <div style={{ marginTop: 12 }}>
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 6 }}>
+              Текст для фокуса дня (показывается под названием вместо описания товара)
+            </Typography.Text>
+            <Input.TextArea
+              value={featuredText}
+              onChange={(e) => setFeaturedText(e.target.value)}
+              rows={3}
+              maxLength={200}
+              placeholder="Например: слоёный, на французском масле"
+              showCount
+            />
+          </div>
+        )}
       </Card>
 
       <Card

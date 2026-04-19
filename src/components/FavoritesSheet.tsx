@@ -69,7 +69,7 @@ export function FavoritesSheet({
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="px-4 pt-1 pb-3 flex items-end justify-between flex-shrink-0">
-          <h2 className="text-[24px] font-bold text-black leading-none">Избранное</h2>
+          <h2 className="text-[28px] font-normal text-black tracking-[-0.6px] leading-none">Избранное</h2>
           {totalQty > 0 && (
             <span className="text-[14px] text-[#8E8E93] leading-none">
               {totalQty} {pluralizeTovar(totalQty)}
@@ -160,7 +160,7 @@ export function FavoritesSheet({
 
           {recommendedProducts.length > 0 && (
             <div className="px-4 pt-5 pb-6">
-              <h3 className="text-[16px] font-bold text-black mb-3">Попробуйте ещё</h3>
+              <h3 className="text-[20px] font-medium text-black tracking-[-0.3px] leading-none mb-3">Попробуйте ещё</h3>
               <div
                 className="flex gap-2.5 overflow-x-auto snap-x -mx-4 px-4"
                 style={{ scrollbarWidth: "none" }}

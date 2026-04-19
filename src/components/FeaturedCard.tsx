@@ -33,47 +33,56 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
   const stop = (e: MouseEvent) => e.stopPropagation();
 
   return (
-    <section className="mb-6">
-      <div className="flex items-center gap-2 px-1.5 mb-3">
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-[0.14em] text-[#8E8E93] uppercase">
+    <section className="mb-6 px-2.5">
+      <div className="flex items-center gap-2 px-1 mb-3">
+        <span className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] text-[#8E8E93] uppercase">
           <span aria-hidden>—</span>
-          На сегодня
+          В фокусе дня
         </span>
       </div>
       <div
         onClick={onClick}
-        className="relative rounded-[24px] overflow-hidden bg-[#F2F2F7] cursor-pointer active:scale-[0.99] transition-transform"
+        className="relative rounded-[24px] overflow-hidden bg-[#EAEAEA] cursor-pointer active:scale-[0.99] transition-transform"
+        style={{ aspectRatio: "1 / 1.15" }}
       >
-        <div className="relative aspect-[4/3] bg-[#EAEAEA]">
-          <Image
-            src={productImage(product)}
-            alt={product.name}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            unoptimized
-          />
-        </div>
-        <div className="px-5 pt-4 pb-5">
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-[#8E8E93] uppercase mb-1.5">
-            Сегодня в фокусе
-          </p>
-          <h2 className="text-[26px] font-bold text-black leading-[1.1]">
+        <Image
+          src={productImage(product)}
+          alt={product.name}
+          fill
+          className="object-cover"
+          sizes="100vw"
+          unoptimized
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10">
+          <h2
+            className="text-white leading-[1.05] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)]"
+            style={{ fontSize: 32, fontWeight: 500 }}
+          >
             {product.name}
           </h2>
-          {product.description && (
-            <p className="text-[14px] text-[#8E8E93] mt-2 leading-snug line-clamp-2">
-              {product.description}
+          {product.featured_text && (
+            <p
+              className="text-white/85 mt-2 leading-snug line-clamp-2"
+              style={{ fontSize: 13 }}
+            >
+              {product.featured_text}
             </p>
           )}
           <div className="flex items-end justify-between mt-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-[22px] font-bold text-black leading-none">
+            <div className="flex items-center gap-2">
+              <span
+                className="text-white leading-none"
+                style={{ fontSize: 24, fontWeight: 600 }}
+              >
                 {price.toLocaleString("ru-RU")} ₽
               </span>
               {weightDisplay && (
-                <span className="text-[13px] text-[#8E8E93] leading-none">
-                  · {weightDisplay}
+                <span
+                  className="inline-flex items-center bg-white text-[#1A1410] rounded-full uppercase tracking-wide"
+                  style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px" }}
+                >
+                  {weightDisplay}
                 </span>
               )}
             </div>

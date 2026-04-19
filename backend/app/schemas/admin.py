@@ -40,6 +40,7 @@ class ProductCreate(BaseModel):
     is_recommended_menu: bool = False
     is_recommended_favorites: bool = False
     is_featured_menu: bool = False
+    featured_text: Optional[str] = None
     media: Optional[list] = None
 
 
@@ -60,6 +61,7 @@ class ProductUpdate(BaseModel):
     is_recommended_menu: Optional[bool] = None
     is_recommended_favorites: Optional[bool] = None
     is_featured_menu: Optional[bool] = None
+    featured_text: Optional[str] = None
     media: Optional[list] = None
 
 
