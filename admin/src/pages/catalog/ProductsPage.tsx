@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   Button,
   Drawer,
@@ -16,7 +16,8 @@ import {
   Card,
   Spin,
 } from 'antd'
-import { HolderOutlined, EditOutlined, DeleteOutlined, SettingOutlined, ShopOutlined } from '@ant-design/icons'
+import { HolderOutlined, EditOutlined, DeleteOutlined, SettingOutlined, ShopOutlined, ScissorOutlined } from '@ant-design/icons'
+import { ImageCropper } from '../../components/ImageCropper'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
@@ -246,6 +247,35 @@ export const ProductsPage = () => {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const cropResolverRef = useRef<{
+    resolve: (blob: Blob) => void
+    reject: () => void
+  } | null>(null)
+
+  const openCropper = (src: string) =>
+    new Promise<Blob>((resolve, reject) => {
+      cropResolverRef.current = { resolve, reject }
+      setCropSrc(src)
+    })
+
+  const closeCropper = (blob?: Blob) => {
+    const r = cropResolverRef.current
+    cropResolverRef.current = null
+    setCropSrc(null)
+    if (!r) return
+    if (blob) r.resolve(blob)
+    else r.reject()
+  }
+
+  const uploadBlob = async (blob: Blob, name = `cropped-${Date.now()}.png`) => {
+    const formData = new FormData()
+    formData.append('file', blob, name)
+    const res = await api.post('/admin/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data.url as string
+  }
   const [searchQuery, setSearchQuery] = useState('')
 
   // Local state for optimistic reordering
@@ -618,16 +648,26 @@ export const ProductsPage = () => {
               name="file"
               multiple
               fileList={fileList}
+              beforeUpload={async (file) => {
+                const objectUrl = URL.createObjectURL(file as Blob)
+                try {
+                  const blob = await openCropper(objectUrl)
+                  URL.revokeObjectURL(objectUrl)
+                  const cropped = new File([blob], (file as File).name.replace(/\.[^.]+$/, '') + '.png', {
+                    type: 'image/png',
+                  })
+                  return cropped
+                } catch {
+                  URL.revokeObjectURL(objectUrl)
+                  return Upload.LIST_IGNORE as any
+                }
+              }}
               customRequest={async (options) => {
                 const { file, onError, onSuccess } = options
-                const formData = new FormData()
-                formData.append('file', file as Blob)
                 try {
-                  const res = await api.post('/admin/upload', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                  })
-                  const url = toDisplayUrl(res.data.url)
-                  onSuccess?.(res.data, file as any)
+                  const rawUrl = await uploadBlob(file as Blob, (file as File).name)
+                  const url = toDisplayUrl(rawUrl)
+                  onSuccess?.({ url: rawUrl }, file as any)
                   setFileList((prev) =>
                     prev.map((f) => (f.uid === (file as UploadFile).uid ? { ...f, url, status: 'done' } : f))
                   )
@@ -640,11 +680,45 @@ export const ProductsPage = () => {
               onRemove={(file) => {
                 setFileList((prev) => prev.filter((f) => f.uid !== file.uid))
               }}
+              onDownload={async (file) => {
+                const url = file.url || ((file.response as any)?.url ? toDisplayUrl((file.response as any).url) : undefined)
+                if (!url) return
+                try {
+                  const res = await fetch(url)
+                  const origBlob = await res.blob()
+                  const src = URL.createObjectURL(origBlob)
+                  const cropped = await openCropper(src)
+                  URL.revokeObjectURL(src)
+                  const rawUrl = await uploadBlob(cropped, `cropped-${file.uid}.png`)
+                  setFileList((prev) =>
+                    prev.map((f) =>
+                      f.uid === file.uid
+                        ? { ...f, url: toDisplayUrl(rawUrl), status: 'done', response: { url: rawUrl } }
+                        : f
+                    )
+                  )
+                } catch (err: any) {
+                  if (err) message.error(err?.response?.data?.detail || 'Ошибка кадрирования')
+                }
+              }}
+              showUploadList={{
+                showPreviewIcon: true,
+                showRemoveIcon: true,
+                showDownloadIcon: true,
+                downloadIcon: <ScissorOutlined title="Кадрировать" />,
+              }}
               accept="image/*"
               listType="picture-card"
             >
               <p className="ant-upload-drag-icon">Нажмите или перетащите файлы</p>
             </Upload.Dragger>
+            <ImageCropper
+              open={cropSrc !== null}
+              src={cropSrc}
+              onCancel={() => closeCropper()}
+              onCrop={(blob) => closeCropper(blob)}
+              aspect={1}
+            />
           </Form.Item>
           <Form.Item name="sort_order" label="Порядок сортировки" hidden>
             <InputNumber style={{ width: '100%' }} />
