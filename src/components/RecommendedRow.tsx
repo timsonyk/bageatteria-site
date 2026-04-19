@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { Heart } from "lucide-react";
 import { MouseEvent } from "react";
 import { Product } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
@@ -34,8 +34,8 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
   return (
     <section className="mt-1 mb-6">
       <div className="flex items-end justify-between px-1.5 mb-3">
-        <h2 className="text-[22px] font-bold text-[#1A1410] leading-none">Рекомендуем</h2>
-        <span className="text-[13px] text-[#8E8E93] leading-none pb-0.5">подобрано для вас</span>
+        <h2 className="text-[20px] font-medium text-[#1A1410] leading-none tracking-[-0.3px]">Рекомендуем</h2>
+        <span className="text-[12px] text-[#8E8E93] leading-none pb-0.5">подобрано для вас</span>
       </div>
 
       <div
@@ -79,12 +79,12 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
               </div>
               <div
                 className="mt-2 line-clamp-2"
-                style={{ fontSize: 13, fontWeight: 500, color: "#1A1410", lineHeight: 1.2, minHeight: 32 }}
+                style={{ fontSize: 13, fontWeight: 500, color: "#1A1410", lineHeight: 1.2 }}
               >
                 {p.name}
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span style={{ fontSize: 13, color: "#1A1410", fontWeight: 500 }}>
+              <div className="mt-0.5 flex items-center justify-between">
+                <span style={{ fontSize: 14, color: "#1A1410" }}>
                   {price.toLocaleString("ru-RU")} ₽
                 </span>
                 <button
@@ -95,12 +95,16 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
                   style={{
                     width: 26,
                     height: 26,
-                    borderRadius: 13,
+                    borderRadius: "50%",
                     background: "#1A1410",
-                    color: "#FFFEFA",
+                    color: "#F5F1EA",
                   }}
                 >
-                  <Plus className="w-[14px] h-[14px]" strokeWidth={2.25} />
+                  <Heart
+                    className="w-[13px] h-[13px]"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
                 </button>
               </div>
             </div>

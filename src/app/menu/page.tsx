@@ -213,13 +213,9 @@ export default function MenuPage() {
       <Header rightElement={<LocationSelector onLocationChange={handleLocationChange} />} />
 
       <main className={`px-2.5 ${totalQty > 0 ? "pb-28" : "pb-6"}`}>
-        {/* Рекомендации и фокус дня — над каталогом */}
+        {/* Фокус дня и рекомендации — над каталогом */}
         {!loading && selectedLocationId !== null && (
           <>
-            <RecommendedRow
-              products={recommendedMenu}
-              onProductClick={handleProductClick}
-            />
             {featuredProduct && (
               <FeaturedCard
                 product={featuredProduct}
@@ -227,6 +223,10 @@ export default function MenuPage() {
                 onClick={() => handleProductClick(featuredProduct)}
               />
             )}
+            <RecommendedRow
+              products={recommendedMenu}
+              onProductClick={handleProductClick}
+            />
           </>
         )}
 

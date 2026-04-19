@@ -6,6 +6,7 @@ import { CategoriesPage } from './pages/catalog/CategoriesPage'
 import { ProductsPage } from './pages/catalog/ProductsPage'
 import { ModificationsPage } from './pages/catalog/ModificationsPage'
 import { RecommendationsPage } from './pages/catalog/RecommendationsPage'
+import { HighlightsPage } from './pages/catalog/HighlightsPage'
 import { CustomersPage } from './pages/customers/CustomersPage'
 import { OrdersPage } from './pages/orders/OrdersPage'
 import { OrderDetailPage } from './pages/orders/OrderDetailPage'
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: 'catalog/products', element: <ProductsPage /> },
       { path: 'catalog/modifications', element: <ModificationsPage /> },
       { path: 'catalog/recommendations', element: <RecommendationsPage /> },
+      { path: 'catalog/highlights', element: <HighlightsPage /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'orders/:id', element: <OrderDetailPage /> },
