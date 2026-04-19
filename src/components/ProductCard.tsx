@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
+import { FavoriteButton } from "./FavoriteButton";
 
 interface ProductCardProps {
   product: Product;
@@ -52,15 +53,20 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
   return (
     <div className="flex flex-col cursor-pointer" onClick={onClick}>
       {/* Изображение на сером фоне */}
-      <div className="relative aspect-square bg-[#EAEAEA] rounded-[20px] overflow-hidden active:scale-[0.98] transition-transform">
-        <Image
-          src={imageUrl}
-          alt={product.name}
-          fill
-          className="object-contain"
-          sizes="(max-width: 768px) 50vw, 33vw"
-          unoptimized
-        />
+      <div className="relative aspect-square bg-[#EAEAEA] rounded-[20px] active:scale-[0.98] transition-transform">
+        <div className="absolute inset-0 overflow-hidden rounded-[20px]">
+          <Image
+            src={imageUrl}
+            alt={product.name}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 50vw, 33vw"
+            unoptimized
+          />
+        </div>
+        <div className="absolute bottom-2 right-2 z-10">
+          <FavoriteButton product={product} />
+        </div>
       </div>
 
       {/* Контент под изображением */}

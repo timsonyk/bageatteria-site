@@ -1,13 +1,27 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { Heart } from "lucide-react";
 import { Header } from "@/components/Header";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ProductModal } from "@/components/ProductModal";
 import { LocationSelector } from "@/components/LocationSelector";
+import { FavoritesSheet } from "@/components/FavoritesSheet";
+import { RecommendedRow } from "@/components/RecommendedRow";
+import { FeaturedCard } from "@/components/FeaturedCard";
 import { getCategories, getProducts } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
+import { useFavorites } from "@/contexts/FavoritesContext";
+
+function pluralizeTovar(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 14) return "товаров";
+  if (mod10 === 1) return "товар";
+  if (mod10 >= 2 && mod10 <= 4) return "товара";
+  return "товаров";
+}
 
 export default function MenuPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -18,7 +32,9 @@ export default function MenuPage() {
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFavoritesSheetOpen, setIsFavoritesSheetOpen] = useState(false);
   const isScrollingRef = useRef(false);
+  const { totalQty } = useFavorites();
 
   // Загрузка категорий
   useEffect(() => {
@@ -52,6 +68,25 @@ export default function MenuPage() {
     }
     loadProducts();
   }, [selectedLocationId]);
+
+  // Рекомендации для главной
+  const recommendedMenu = useMemo(
+    () => products.filter((p) => p.is_active && p.is_recommended_menu),
+    [products]
+  );
+
+  // Фокус дня: один активный товар
+  const featuredProduct = useMemo(
+    () => products.find((p) => p.is_active && p.is_featured_menu) ?? null,
+    [products]
+  );
+
+  // Карта категорий (для unit у фокус-карточки)
+  const categoryMap = useMemo(() => {
+    const m = new Map<number, Category>();
+    for (const c of categories) m.set(c.id, c);
+    return m;
+  }, [categories]);
 
   // Группировка товаров по категориям
   const productsByCategory = useMemo(() => {
@@ -142,6 +177,21 @@ export default function MenuPage() {
     setSelectedProduct(product);
   }, []);
 
+  // Heart-кнопка в модалке: закрыть модалку и открыть лист избранного
+  const handleOpenFavorites = useCallback(() => {
+    setIsModalOpen(false);
+    setTimeout(() => setIsFavoritesSheetOpen(true), 300);
+  }, []);
+
+  // Клик по товару из листа избранного: закрыть лист, открыть модалку
+  const handleFavoritesProductClick = useCallback((product: Product) => {
+    setIsFavoritesSheetOpen(false);
+    setTimeout(() => {
+      setSelectedProduct(product);
+      setIsModalOpen(true);
+    }, 300);
+  }, []);
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -162,7 +212,24 @@ export default function MenuPage() {
     <div className="min-h-screen bg-background">
       <Header rightElement={<LocationSelector onLocationChange={handleLocationChange} />} />
 
-      <main className="px-2.5 pb-6">
+      <main className={`px-2.5 ${totalQty > 0 ? "pb-28" : "pb-6"}`}>
+        {/* Рекомендации и фокус дня — над каталогом */}
+        {!loading && selectedLocationId !== null && (
+          <>
+            <RecommendedRow
+              products={recommendedMenu}
+              onProductClick={handleProductClick}
+            />
+            {featuredProduct && (
+              <FeaturedCard
+                product={featuredProduct}
+                categoryUnit={categoryMap.get(featuredProduct.category_id)?.unit}
+                onClick={() => handleProductClick(featuredProduct)}
+              />
+            )}
+          </>
+        )}
+
         {/* Табы категорий */}
         <CategoryTabs
           categories={categories}
@@ -205,7 +272,37 @@ export default function MenuPage() {
         products={sortedProducts}
         categories={categories}
         onProductChange={handleProductChange}
+        onOpenFavorites={handleOpenFavorites}
       />
+
+      {/* Favorites Sheet */}
+      <FavoritesSheet
+        isOpen={isFavoritesSheetOpen}
+        onClose={() => setIsFavoritesSheetOpen(false)}
+        products={sortedProducts}
+        categories={categories}
+        onProductClick={handleFavoritesProductClick}
+        recommendedProducts={products.filter((p) => p.is_active && p.is_recommended_favorites)}
+      />
+
+      {/* Sticky bottom bar */}
+      {totalQty > 0 && (
+        <div
+          className="fixed bottom-0 left-0 right-0 px-4 pt-3 z-30 pointer-events-none"
+          style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <button
+            type="button"
+            onClick={() => setIsFavoritesSheetOpen(true)}
+            className="w-full h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform pointer-events-auto"
+          >
+            <span className="text-[17px] font-semibold text-black">
+              Избранное · {totalQty} {pluralizeTovar(totalQty)}
+            </span>
+            <Heart className="w-6 h-6 text-black" strokeWidth={1.75} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

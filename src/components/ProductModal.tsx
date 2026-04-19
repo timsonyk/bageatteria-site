@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import Image from "next/image";
+import { Heart, Minus, Plus } from "lucide-react";
 import { Product, Category, ModificationGroup, ModificationOption } from "@/lib/types";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface ProductModalProps {
   products: Product[];
   categories: Category[];
   onProductChange: (product: Product) => void;
+  onOpenFavorites?: () => void;
 }
 
 // Card component for a single product
@@ -18,10 +21,12 @@ function ProductCard({
   product,
   getImageUrl,
   categoryUnit,
+  onOpenFavorites,
 }: {
   product: Product;
   getImageUrl: (p: Product) => string;
   categoryUnit?: string;
+  onOpenFavorites?: () => void;
 }) {
   const imageUrl = getImageUrl(product);
   const sortedSizes = useMemo(() => {
@@ -95,6 +100,16 @@ function ProductCard({
     : parseFloat(product.base_price);
   const price = basePrice + modsExtra;
 
+  const currentSizeId = hasSizes ? sortedSizes[selectedSizeIndex]?.id ?? null : null;
+  const currentOptionIds = useMemo(
+    () => [...selectedOptions].sort((a, b) => a - b),
+    [selectedOptions]
+  );
+
+  const { getVariantQty, getProductQty, addVariant, decrementVariant } = useFavorites();
+  const qty = getVariantQty(product.id, currentSizeId, currentOptionIds);
+  const productQty = getProductQty(product.id);
+
   // Формируем строку веса с единицей измерения
   const weightDisplay = useMemo(() => {
     // Если выбран размер с volume, показываем его
@@ -111,7 +126,8 @@ function ProductCard({
   }, [product.weight, categoryUnit, hasSizes, sortedSizes, selectedSizeIndex]);
 
   return (
-    <div className="w-full flex-shrink-0">
+    <div className="w-full flex-shrink-0 flex flex-col min-h-full">
+      <div className="flex-1">
       {/* Product Image */}
       <div className="relative aspect-square bg-[#EAEAEA] mx-4 rounded-[20px] overflow-hidden">
         <Image
@@ -126,7 +142,7 @@ function ProductCard({
       </div>
 
       {/* Product Info */}
-      <div className="px-4 pt-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="px-4 pt-4 pb-4">
         <h2 className="text-[22px] font-bold text-black">{product.name}</h2>
 
         {/* Size Selector */}
@@ -300,6 +316,59 @@ function ProductCard({
           </div>
         )}
       </div>
+      </div>
+      {/* Sticky bottom bar */}
+      <div
+        className="sticky bottom-0 px-4 pt-3"
+        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div className="flex items-center">
+          {qty === 0 ? (
+            <button
+              type="button"
+              onClick={() => addVariant(product.id, currentSizeId, currentOptionIds)}
+              className="flex-1 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            >
+              <span className="text-[17px] font-semibold text-black">
+                {price.toLocaleString("ru-RU")} ₽
+              </span>
+              <Plus className="w-5 h-5 text-black" strokeWidth={2} />
+            </button>
+          ) : (
+            <div className="flex-1 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-2">
+              <button
+                type="button"
+                aria-label="Уменьшить"
+                onClick={() => decrementVariant(product.id, currentSizeId, currentOptionIds)}
+                className="w-12 h-12 flex items-center justify-center active:scale-[0.9] transition-transform"
+              >
+                <Minus className="w-5 h-5 text-black" strokeWidth={2} />
+              </button>
+              <span className="text-[17px] font-semibold text-black tabular-nums">
+                {qty} × {price.toLocaleString("ru-RU")} ₽
+              </span>
+              <button
+                type="button"
+                aria-label="Увеличить"
+                onClick={() => addVariant(product.id, currentSizeId, currentOptionIds)}
+                className="w-12 h-12 flex items-center justify-center active:scale-[0.9] transition-transform"
+              >
+                <Plus className="w-5 h-5 text-black" strokeWidth={2} />
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            aria-label="Избранное"
+            onClick={onOpenFavorites}
+            className={`h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
+              productQty > 0 ? "w-14 ml-2 opacity-100" : "w-0 ml-0 opacity-0 pointer-events-none"
+            }`}
+          >
+            <Heart className="w-6 h-6 text-black flex-shrink-0" strokeWidth={1.75} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -311,6 +380,7 @@ export function ProductModal({
   products,
   categories,
   onProductChange,
+  onOpenFavorites,
 }: ProductModalProps) {
   // Создаём карту категорий для быстрого доступа к unit
   const categoryMap = useMemo(() => {
@@ -730,7 +800,7 @@ export function ProductModal({
                 ref={position === 0 ? scrollContainerRef : undefined}
                 className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               >
-                <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} />
+                <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} onOpenFavorites={onOpenFavorites} />
               </div>
             ))}
           </div>

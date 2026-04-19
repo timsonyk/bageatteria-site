@@ -37,6 +37,9 @@ export interface Product {
   carbs: number | null;  // углеводы, г
   ingredients: string | null;  // состав
   is_active: boolean;
+  is_recommended_menu?: boolean;
+  is_recommended_favorites?: boolean;
+  is_featured_menu?: boolean;
   media: MediaItem[] | null;
   sort_order: number;
   sizes?: ProductSize[];

@@ -32,6 +32,7 @@ services:
     build: ./backend
     command: python telegram_bot.py
     restart: unless-stopped
+    profiles: ["bots"]
     env_file:
       - ./backend/.env
     depends_on:
@@ -51,6 +52,7 @@ services:
     build: ./backend
     command: python auth_bot.py
     restart: unless-stopped
+    profiles: ["bots"]
     env_file:
       - ./backend/.env
     depends_on:

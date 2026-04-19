@@ -434,7 +434,7 @@ export const ProductsPage = () => {
   const openCreate = () => {
     setEditing(null)
     form.resetFields()
-    form.setFieldsValue({ is_active: true, sort_order: 0 })
+    form.setFieldsValue({ is_active: true, sort_order: 0, is_recommended_menu: false, is_recommended_favorites: false, is_featured_menu: false })
     setFileList([])
     setOpen(true)
   }
@@ -543,7 +543,7 @@ export const ProductsPage = () => {
         <Form
           layout="vertical"
           form={form}
-          initialValues={{ is_active: true, sort_order: 0 }}
+          initialValues={{ is_active: true, sort_order: 0, is_recommended_menu: false, is_recommended_favorites: false, is_featured_menu: false }}
           onFinish={(values) => {
             const mediaUrls = fileList.map((f) => (f.response as any)?.url || f.url).filter(Boolean)
             const payload = { ...values, media: mediaUrls }
@@ -634,6 +634,27 @@ export const ProductsPage = () => {
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="is_active" label="Активен" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            name="is_recommended_menu"
+            label="Показывать в «Рекомендуем» на главной"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            name="is_featured_menu"
+            label="Сегодня в фокусе (главная, большая карточка)"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            name="is_recommended_favorites"
+            label="Показывать в рекомендациях в избранном"
+            valuePropName="checked"
+          >
             <Switch />
           </Form.Item>
         </Form>

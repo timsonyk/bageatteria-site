@@ -37,6 +37,9 @@ class ProductCreate(BaseModel):
     ingredients: Optional[str] = None  # состав
     sort_order: int = 0
     is_active: bool = True
+    is_recommended_menu: bool = False
+    is_recommended_favorites: bool = False
+    is_featured_menu: bool = False
     media: Optional[list] = None
 
 
@@ -54,6 +57,9 @@ class ProductUpdate(BaseModel):
     ingredients: Optional[str] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
+    is_recommended_menu: Optional[bool] = None
+    is_recommended_favorites: Optional[bool] = None
+    is_featured_menu: Optional[bool] = None
     media: Optional[list] = None
 
 

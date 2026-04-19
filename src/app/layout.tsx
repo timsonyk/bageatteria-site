@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 
 const montserrat = Montserrat({
   variable: "--font-sans",
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={`${montserrat.variable} font-sans antialiased`}>
-        {children}
+        <FavoritesProvider>{children}</FavoritesProvider>
       </body>
     </html>
   );

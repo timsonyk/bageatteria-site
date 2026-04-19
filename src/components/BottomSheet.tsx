@@ -7,9 +7,10 @@ interface BottomSheetProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  fullHeight?: boolean;
 }
 
-export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, title, children, fullHeight = false }: BottomSheetProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -63,26 +64,28 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
 
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] max-h-[80vh] overflow-hidden transform transition-transform duration-300 ease-out ${
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] ${fullHeight ? "h-[90vh]" : "max-h-[80vh]"} overflow-hidden transform transition-transform duration-300 ease-out flex flex-col ${
           isAnimating ? "translate-y-0" : "translate-y-full"
         }`}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2">
+        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
         </div>
 
         {/* Title */}
         {title && (
-          <div className="px-4 pb-3 border-b border-gray-100">
+          <div className="px-4 pb-3 border-b border-gray-100 flex-shrink-0">
             <h2 className="text-lg font-semibold text-center">{title}</h2>
           </div>
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
-          {children}
-        </div>
+        {fullHeight ? (
+          <div className="flex-1 min-h-0 flex flex-col">{children}</div>
+        ) : (
+          <div className="overflow-y-auto flex-1 min-h-0">{children}</div>
+        )}
       </div>
     </div>
   );
