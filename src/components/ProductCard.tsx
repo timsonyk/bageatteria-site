@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
+import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface ProductCardProps {
   product: Product;
@@ -12,20 +13,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps) {
-  const mediaItem = product.media?.[0];
-  // media может быть массивом строк или объектов с url
-  const mediaUrl = typeof mediaItem === 'string' ? mediaItem : mediaItem?.url;
-  const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:8000";
-
-  // Обработка URL изображения
-  let imageUrl = "/placeholder.svg";
-  if (mediaUrl) {
-    if (mediaUrl.startsWith('http')) {
-      imageUrl = mediaUrl;
-    } else {
-      imageUrl = `${MEDIA_URL}${mediaUrl}`;
-    }
-  }
+  const imageUrl = getProductImageUrl(product);
   const hasSizes = product.sizes && product.sizes.length > 0;
   const defaultSize = useMemo(() => {
     if (!hasSizes) return null;
@@ -52,18 +40,23 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
 
   return (
     <div className="flex flex-col cursor-pointer" onClick={onClick}>
-      {/* Изображение на сером фоне */}
-      <div className="relative aspect-square bg-[#EAEAEA] rounded-[20px] active:scale-[0.98] transition-transform">
-        <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-          <Image
-            src={imageUrl}
-            alt={product.name}
-            fill
-            className="object-contain"
-            sizes="(max-width: 768px) 50vw, 33vw"
-            unoptimized
-          />
-        </div>
+      {/* Изображение либо заглушка */}
+      <div
+        className="relative aspect-square rounded-[20px] active:scale-[0.98] transition-transform"
+        style={imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
+      >
+        {imageUrl && (
+          <div className="absolute inset-0 overflow-hidden rounded-[20px]">
+            <Image
+              src={imageUrl}
+              alt={product.name}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 50vw, 33vw"
+              unoptimized
+            />
+          </div>
+        )}
         <div className="absolute bottom-2 right-2 z-10">
           <FavoriteButton product={product} />
         </div>

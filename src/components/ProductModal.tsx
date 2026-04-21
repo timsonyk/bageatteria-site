@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Heart, Minus, Plus } from "lucide-react";
 import { Product, Category, ModificationGroup, ModificationOption } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ function ProductCard({
   onOpenFavorites,
 }: {
   product: Product;
-  getImageUrl: (p: Product) => string;
+  getImageUrl: (p: Product) => string | null;
   categoryUnit?: string;
   onOpenFavorites?: () => void;
 }) {
@@ -129,16 +130,21 @@ function ProductCard({
     <div className="w-full flex-shrink-0 flex flex-col min-h-full">
       <div className="flex-1">
       {/* Product Image */}
-      <div className="relative aspect-square bg-[#EAEAEA] mx-4 rounded-[20px] overflow-hidden">
-        <Image
-          src={imageUrl}
-          alt={product.name}
-          fill
-          className="object-contain pointer-events-none select-none"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          unoptimized
-          draggable={false}
-        />
+      <div
+        className="relative aspect-square mx-4 rounded-[20px] overflow-hidden"
+        style={imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
+      >
+        {imageUrl && (
+          <Image
+            src={imageUrl}
+            alt={product.name}
+            fill
+            className="object-contain pointer-events-none select-none"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            unoptimized
+            draggable={false}
+          />
+        )}
       </div>
 
       {/* Product Info */}
@@ -424,10 +430,10 @@ export function ProductModal({
   }, [currentIndex, hasPrev, hasNext, products]);
 
   // Helper to get image URL from product
-  const getImageUrl = useCallback((p: Product): string => {
+  const getImageUrl = useCallback((p: Product): string | null => {
     const mediaItem = p.media?.[0];
     const mediaUrl = typeof mediaItem === "string" ? mediaItem : mediaItem?.url;
-    if (!mediaUrl) return "/placeholder.svg";
+    if (!mediaUrl) return null;
     if (mediaUrl.startsWith("http")) return mediaUrl;
     return `${MEDIA_URL}${mediaUrl}`;
   }, [MEDIA_URL]);
@@ -442,10 +448,12 @@ export function ProductModal({
     };
 
     if (hasPrev) {
-      preloadImage(getImageUrl(products[currentIndex - 1]));
+      const u = getImageUrl(products[currentIndex - 1]);
+      if (u) preloadImage(u);
     }
     if (hasNext) {
-      preloadImage(getImageUrl(products[currentIndex + 1]));
+      const u = getImageUrl(products[currentIndex + 1]);
+      if (u) preloadImage(u);
     }
   }, [isOpen, currentIndex, hasPrev, hasNext, products, getImageUrl]);
 

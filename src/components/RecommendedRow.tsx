@@ -5,19 +5,11 @@ import { Heart } from "lucide-react";
 import { MouseEvent } from "react";
 import { Product } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface RecommendedRowProps {
   products: Product[];
   onProductClick: (p: Product) => void;
-}
-
-function productImage(p: Product): string {
-  const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:8000";
-  const mediaItem = p.media?.[0];
-  const url = typeof mediaItem === "string" ? mediaItem : mediaItem?.url;
-  if (!url) return "/placeholder.svg";
-  if (url.startsWith("http")) return url;
-  return `${MEDIA_URL}${url}`;
 }
 
 export function RecommendedRow({ products, onProductClick }: RecommendedRowProps) {
@@ -50,6 +42,7 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
       >
         {products.map((p) => {
           const price = parseFloat(p.base_price);
+          const imageUrl = getProductImageUrl(p);
           return (
             <div
               key={p.id}
@@ -64,17 +57,24 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
               className="cursor-pointer active:scale-[0.98] transition-transform"
             >
               <div
-                className="relative bg-[#EAEAEA]"
-                style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "1 / 0.85" }}
+                className="relative"
+                style={{
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  aspectRatio: "1 / 0.85",
+                  ...(imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE),
+                }}
               >
-                <Image
-                  src={productImage(p)}
-                  alt={p.name}
-                  fill
-                  sizes="150px"
-                  className="object-cover"
-                  unoptimized
-                />
+                {imageUrl && (
+                  <Image
+                    src={imageUrl}
+                    alt={p.name}
+                    fill
+                    sizes="150px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                )}
               </div>
               <div
                 className="mt-2 line-clamp-2"

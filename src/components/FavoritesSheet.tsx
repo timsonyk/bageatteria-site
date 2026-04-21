@@ -7,6 +7,7 @@ import { BottomSheet } from "./BottomSheet";
 import { Product, Category } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { computeVariantPrice, variantSummary } from "@/lib/favorites";
+import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface FavoritesSheetProps {
   isOpen: boolean;
@@ -26,14 +27,6 @@ function pluralizeTovar(n: number): string {
   return "товаров";
 }
 
-function productImage(product: Product): string {
-  const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:8000";
-  const mediaItem = product.media?.[0];
-  const mediaUrl = typeof mediaItem === "string" ? mediaItem : mediaItem?.url;
-  if (!mediaUrl) return "/placeholder.svg";
-  if (mediaUrl.startsWith("http")) return mediaUrl;
-  return `${MEDIA_URL}${mediaUrl}`;
-}
 
 export function FavoritesSheet({
   isOpen,
@@ -99,15 +92,20 @@ export function FavoritesSheet({
                   className="flex items-center gap-3 px-4 py-3 border-b border-[#F2F2F7] last:border-b-0 active:bg-[#F9F9FB] transition-colors cursor-pointer"
                   onClick={() => onProductClick(product)}
                 >
-                  <div className="relative w-[72px] h-[72px] bg-[#EAEAEA] rounded-[14px] overflow-hidden flex-shrink-0">
-                    <Image
-                      src={productImage(product)}
-                      alt={product.name}
-                      fill
-                      className="object-contain"
-                      sizes="72px"
-                      unoptimized
-                    />
+                  <div
+                    className="relative w-[72px] h-[72px] rounded-[14px] overflow-hidden flex-shrink-0"
+                    style={getProductImageUrl(product) ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
+                  >
+                    {getProductImageUrl(product) && (
+                      <Image
+                        src={getProductImageUrl(product)!}
+                        alt={product.name}
+                        fill
+                        className="object-contain"
+                        sizes="72px"
+                        unoptimized
+                      />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[15px] font-semibold text-black truncate leading-tight">
@@ -171,15 +169,20 @@ export function FavoritesSheet({
                     className="flex-shrink-0 w-[140px] snap-start cursor-pointer active:scale-[0.98] transition-transform"
                     onClick={() => onProductClick(p)}
                   >
-                    <div className="relative aspect-square bg-[#EAEAEA] rounded-[14px] overflow-hidden">
-                      <Image
-                        src={productImage(p)}
-                        alt={p.name}
-                        fill
-                        sizes="140px"
-                        className="object-contain"
-                        unoptimized
-                      />
+                    <div
+                      className="relative aspect-square rounded-[14px] overflow-hidden"
+                      style={getProductImageUrl(p) ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
+                    >
+                      {getProductImageUrl(p) && (
+                        <Image
+                          src={getProductImageUrl(p)!}
+                          alt={p.name}
+                          fill
+                          sizes="140px"
+                          className="object-contain"
+                          unoptimized
+                        />
+                      )}
                     </div>
                     <div className="mt-1.5 pl-0.5">
                       <h4 className="text-[13px] font-medium text-black leading-tight line-clamp-2 min-h-[32px]">

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { MouseEvent } from "react";
 import { Product } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
+import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface FeaturedCardProps {
   product: Product;
@@ -11,17 +12,9 @@ interface FeaturedCardProps {
   onClick: () => void;
 }
 
-function productImage(p: Product): string {
-  const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:8000";
-  const mediaItem = p.media?.[0];
-  const url = typeof mediaItem === "string" ? mediaItem : mediaItem?.url;
-  if (!url) return "/placeholder.svg";
-  if (url.startsWith("http")) return url;
-  return `${MEDIA_URL}${url}`;
-}
-
 export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardProps) {
   const price = parseFloat(product.base_price);
+  const imageUrl = getProductImageUrl(product);
   const hasUnitInWeight =
     typeof product.weight === "string" && /[а-яa-z]/i.test(product.weight);
   const weightDisplay = product.weight
@@ -42,17 +35,22 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
       </div>
       <div
         onClick={onClick}
-        className="relative rounded-[24px] overflow-hidden bg-[#EAEAEA] cursor-pointer active:scale-[0.99] transition-transform"
-        style={{ aspectRatio: "1 / 1.15" }}
+        className="relative rounded-[24px] overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
+        style={{
+          aspectRatio: "1 / 1.15",
+          ...(imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE),
+        }}
       >
-        <Image
-          src={productImage(product)}
-          alt={product.name}
-          fill
-          className="object-cover"
-          sizes="100vw"
-          unoptimized
-        />
+        {imageUrl && (
+          <Image
+            src={imageUrl}
+            alt={product.name}
+            fill
+            className="object-cover"
+            sizes="100vw"
+            unoptimized
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10">
           <h2
