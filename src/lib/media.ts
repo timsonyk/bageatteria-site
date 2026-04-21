@@ -16,9 +16,9 @@ export function getProductImageUrl(product: Product): string | null {
 }
 
 /**
- * Бежевая штриховка-заглушка для товаров без фото.
+ * Серая штриховка-заглушка для товаров без фото.
  */
 export const PHOTO_PLACEHOLDER_STYLE: CSSProperties = {
   backgroundImage:
-    "repeating-linear-gradient(135deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 8px), linear-gradient(135deg, #E8DCC4 0%, #D8C8A8 100%)",
+    "repeating-linear-gradient(135deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 8px), linear-gradient(135deg, #E8E8E8 0%, #C8C8C8 100%)",
 };
