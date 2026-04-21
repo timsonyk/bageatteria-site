@@ -653,8 +653,8 @@ export const ProductsPage = () => {
                 try {
                   const blob = await openCropper(objectUrl)
                   URL.revokeObjectURL(objectUrl)
-                  const cropped = new File([blob], (file as File).name.replace(/\.[^.]+$/, '') + '.png', {
-                    type: 'image/png',
+                  const cropped = new File([blob], (file as File).name.replace(/\.[^.]+$/, '') + '.jpg', {
+                    type: 'image/jpeg',
                   })
                   return cropped
                 } catch {
@@ -689,7 +689,7 @@ export const ProductsPage = () => {
                   const src = URL.createObjectURL(origBlob)
                   const cropped = await openCropper(src)
                   URL.revokeObjectURL(src)
-                  const rawUrl = await uploadBlob(cropped, `cropped-${file.uid}.png`)
+                  const rawUrl = await uploadBlob(cropped, `cropped-${file.uid}.jpg`)
                   setFileList((prev) =>
                     prev.map((f) =>
                       f.uid === file.uid

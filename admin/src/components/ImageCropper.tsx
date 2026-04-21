@@ -74,12 +74,20 @@ export function ImageCropper({ open, src, onCancel, onCrop, aspect = 1 }: ImageC
   )
 }
 
+const MAX_DIM = 2000
+const JPEG_QUALITY = 0.9
+
 async function cropToBlob(img: HTMLImageElement, crop: PixelCrop): Promise<Blob> {
   const scaleX = img.naturalWidth / img.width
   const scaleY = img.naturalHeight / img.height
+  const nativeW = Math.round(crop.width * scaleX)
+  const nativeH = Math.round(crop.height * scaleY)
+  // Не превышаем MAX_DIM по большей стороне: бэкенд всё равно ужмёт до 1200, но
+  // на мобильных фото с 48 МП PNG с cropToBlob легко даёт 30-50 МБ и ловит 400.
+  const downscale = Math.min(1, MAX_DIM / Math.max(nativeW, nativeH))
   const canvas = document.createElement('canvas')
-  canvas.width = Math.round(crop.width * scaleX)
-  canvas.height = Math.round(crop.height * scaleY)
+  canvas.width = Math.max(1, Math.round(nativeW * downscale))
+  canvas.height = Math.max(1, Math.round(nativeH * downscale))
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('no 2d ctx')
   ctx.drawImage(
@@ -94,6 +102,10 @@ async function cropToBlob(img: HTMLImageElement, crop: PixelCrop): Promise<Blob>
     canvas.height
   )
   return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png', 0.95)
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+      'image/jpeg',
+      JPEG_QUALITY
+    )
   )
 }
