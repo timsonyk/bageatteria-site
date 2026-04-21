@@ -76,18 +76,18 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
           {product.name}
         </h3>
 
-        {/* Цена */}
-        <span className="text-[14px] font-normal text-black leading-snug mt-1">
-          {price.toLocaleString("ru-RU")} ₽
-        </span>
+        {/* Цена · объём / вес */}
+        <p className="text-[14px] leading-snug mt-1">
+          <span className="text-black font-normal">{price.toLocaleString("ru-RU")} ₽</span>
+          {weightDisplay && (
+            <span className="text-[#8E8E93]"> · {weightDisplay}</span>
+          )}
+        </p>
 
-        {/* Вес и калории */}
-        {(weightDisplay || product.calories) && (
+        {/* Калории */}
+        {product.calories && (
           <p className="text-[13px] text-[#8E8E93] leading-snug mt-0.5">
-            {[
-              weightDisplay,
-              product.calories ? `${product.calories} ккал` : null
-            ].filter(Boolean).join(' · ')}
+            {product.calories} ккал
           </p>
         )}
       </div>
