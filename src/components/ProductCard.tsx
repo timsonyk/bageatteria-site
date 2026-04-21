@@ -80,7 +80,11 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
         <p className="text-[14px] leading-snug mt-1">
           <span className="text-black font-normal">{price.toLocaleString("ru-RU")} ₽</span>
           {weightDisplay && (
-            <span className="text-[#8E8E93]"> · {weightDisplay}</span>
+            <>
+              {" "}
+              <span className="text-[#8E8E93] font-semibold">·</span>
+              <span className="text-[#8E8E93]"> {weightDisplay}</span>
+            </>
           )}
         </p>
 

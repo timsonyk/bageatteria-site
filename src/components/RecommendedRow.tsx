@@ -32,18 +32,17 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
   };
 
   return (
-    <section className="mt-1 mb-6">
-      <div className="flex items-end justify-between px-1.5 mb-3">
+    <section className="mt-1 mb-6 px-2.5">
+      <div className="flex items-end justify-between mb-3">
         <h2 className="text-[20px] font-medium text-[#1A1410] leading-none tracking-[-0.3px]">Рекомендуем</h2>
         <span className="text-[12px] text-[#8E8E93] leading-none pb-0.5">подобрано для вас</span>
       </div>
 
       <div
-        className="-mx-2.5 [&::-webkit-scrollbar]:hidden"
+        className="[&::-webkit-scrollbar]:hidden"
         style={{
           display: "flex",
           gap: 10,
-          padding: "0 20px",
           overflowX: "auto",
           scrollbarWidth: "none",
           scrollSnapType: "x mandatory",
