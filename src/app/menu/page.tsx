@@ -285,19 +285,20 @@ export default function MenuPage() {
         recommendedProducts={products.filter((p) => p.is_active && p.is_recommended_favorites)}
       />
 
-      {/* Sticky bottom bar — выезжает снизу при появлении избранного */}
+      {/* Sticky bottom bar — плавное появление через opacity */}
       <div
-        className="fixed bottom-0 left-0 right-0 px-4 pt-3 z-30 pointer-events-none"
+        className="fixed bottom-0 left-0 right-0 px-4 pt-3 z-30"
         style={{
           paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
-          transform: totalQty > 0 ? "translateY(0)" : "translateY(120%)",
-          transition: "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+          opacity: totalQty > 0 ? 1 : 0,
+          pointerEvents: totalQty > 0 ? "auto" : "none",
+          transition: "opacity 250ms ease-out",
         }}
       >
         <button
           type="button"
           onClick={() => setIsFavoritesSheetOpen(true)}
-          className="w-full h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform pointer-events-auto"
+          className="w-full h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform"
         >
           <span className="text-[17px] font-semibold text-black">
             Избранное · {totalQty} {pluralizeTovar(totalQty)}
