@@ -79,6 +79,11 @@ class ProductSize(Base):
     volume = Column(String(50), nullable=True)  # 200 мл, 300 мл, 400 мл
     base_price = Column(Numeric(10, 2), nullable=False)
     sort_order = Column(Integer, default=0, nullable=False)
+    # КБЖУ на порцию этого размера (nullable — не для всех товаров задано)
+    calories = Column(Integer, nullable=True)
+    proteins = Column(Float, nullable=True)
+    fats = Column(Float, nullable=True)
+    carbs = Column(Float, nullable=True)
 
     product = relationship("Product", back_populates="sizes")
 
@@ -117,6 +122,11 @@ class ModificationOption(Base):
     is_default = Column(Boolean, default=False, nullable=False)
     sort_order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    # Дельта-КБЖУ при выборе опции (на порцию; добавляется к базе)
+    calories = Column(Integer, nullable=True)
+    proteins = Column(Float, nullable=True)
+    fats = Column(Float, nullable=True)
+    carbs = Column(Float, nullable=True)
 
     group = relationship("ModificationGroup", back_populates="options")
 

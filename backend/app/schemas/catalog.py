@@ -21,6 +21,10 @@ class ProductSizeOut(BaseModel):
     volume: Optional[str] = None
     base_price: float
     sort_order: int
+    calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -34,6 +38,10 @@ class ModificationOptionOut(BaseModel):
     is_default: bool
     sort_order: int
     is_active: bool
+    calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
 
     class Config:
         from_attributes = True

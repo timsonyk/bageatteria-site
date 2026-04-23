@@ -15,6 +15,10 @@ export interface ProductSize {
   volume: string;
   base_price: string;
   sort_order: number;
+  calories?: number | null;
+  proteins?: number | null;
+  fats?: number | null;
+  carbs?: number | null;
 }
 
 // Медиа элемент
@@ -72,6 +76,11 @@ export interface ModificationOption {
   is_default: boolean;
   sort_order: number;
   is_active: boolean;
+  // Дельта-КБЖУ при выборе этой опции (прибавляется к базе)
+  calories?: number | null;
+  proteins?: number | null;
+  fats?: number | null;
+  carbs?: number | null;
 }
 
 // Группа модификаций

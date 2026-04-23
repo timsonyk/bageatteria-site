@@ -101,6 +101,31 @@ function ProductCard({
     : parseFloat(product.base_price);
   const price = basePrice + modsExtra;
 
+  // Динамический КБЖУ: база из выбранного размера (иначе Product) + дельты модификаций
+  const dynamicKbju = useMemo(() => {
+    const currentSize = hasSizes ? sortedSizes[selectedSizeIndex] : null;
+    const pickField = (sizeVal: number | null | undefined, prodVal: number | null | undefined) =>
+      sizeVal != null ? sizeVal : prodVal;
+    let kcal = pickField(currentSize?.calories, product.calories);
+    let prot = pickField(currentSize?.proteins, product.proteins);
+    let fat = pickField(currentSize?.fats, product.fats);
+    let carb = pickField(currentSize?.carbs, product.carbs);
+    modGroups.forEach(g => g.options.forEach(o => {
+      if (!selectedOptions.has(o.id)) return;
+      if (kcal != null && o.calories != null) kcal += o.calories;
+      if (prot != null && o.proteins != null) prot += o.proteins;
+      if (fat != null && o.fats != null) fat += o.fats;
+      if (carb != null && o.carbs != null) carb += o.carbs;
+    }));
+    const round1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
+    return {
+      calories: kcal != null ? Math.max(0, Math.round(kcal)) : null,
+      proteins: round1(prot),
+      fats: round1(fat),
+      carbs: round1(carb),
+    };
+  }, [hasSizes, sortedSizes, selectedSizeIndex, product.calories, product.proteins, product.fats, product.carbs, modGroups, selectedOptions]);
+
   const currentSizeId = hasSizes ? sortedSizes[selectedSizeIndex]?.id ?? null : null;
   const currentOptionIds = useMemo(
     () => [...selectedOptions].sort((a, b) => a - b),
@@ -226,32 +251,32 @@ function ProductCard({
           </div>
         )}
 
-        {/* КБЖУ */}
-        {(product.calories || product.proteins || product.fats || product.carbs) && (
+        {/* КБЖУ (динамический — зависит от размера и модификаций) */}
+        {(dynamicKbju.calories != null || dynamicKbju.proteins != null || dynamicKbju.fats != null || dynamicKbju.carbs != null) && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <h3 className="text-[14px] font-semibold text-black mb-2">Пищевая ценность</h3>
             <div className="grid grid-cols-4 gap-2">
-              {product.calories !== null && (
+              {dynamicKbju.calories != null && (
                 <div className="text-center">
-                  <div className="text-[16px] font-medium text-black">{product.calories}</div>
+                  <div className="text-[16px] font-medium text-black tabular-nums">{dynamicKbju.calories}</div>
                   <div className="text-[12px] text-[#8E8E93]">ккал</div>
                 </div>
               )}
-              {product.proteins !== null && (
+              {dynamicKbju.proteins != null && (
                 <div className="text-center">
-                  <div className="text-[16px] font-medium text-black">{product.proteins}</div>
+                  <div className="text-[16px] font-medium text-black tabular-nums">{dynamicKbju.proteins}</div>
                   <div className="text-[12px] text-[#8E8E93]">белки</div>
                 </div>
               )}
-              {product.fats !== null && (
+              {dynamicKbju.fats != null && (
                 <div className="text-center">
-                  <div className="text-[16px] font-medium text-black">{product.fats}</div>
+                  <div className="text-[16px] font-medium text-black tabular-nums">{dynamicKbju.fats}</div>
                   <div className="text-[12px] text-[#8E8E93]">жиры</div>
                 </div>
               )}
-              {product.carbs !== null && (
+              {dynamicKbju.carbs != null && (
                 <div className="text-center">
-                  <div className="text-[16px] font-medium text-black">{product.carbs}</div>
+                  <div className="text-[16px] font-medium text-black tabular-nums">{dynamicKbju.carbs}</div>
                   <div className="text-[12px] text-[#8E8E93]">углеводы</div>
                 </div>
               )}
