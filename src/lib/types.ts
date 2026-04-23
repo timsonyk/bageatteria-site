@@ -86,11 +86,6 @@ export interface ModificationOption {
   proteins?: number | null;
   fats?: number | null;
   carbs?: number | null;
-  // Процентная дельта: итог = base × (1 + pct/100)
-  calories_pct?: number | null;
-  proteins_pct?: number | null;
-  fats_pct?: number | null;
-  carbs_pct?: number | null;
   // КБЖУ на 100 г — полная замена базы
   calories_per_100g?: number | null;
   proteins_per_100g?: number | null;

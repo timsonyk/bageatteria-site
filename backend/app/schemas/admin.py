@@ -145,10 +145,6 @@ class ModificationOptionCreate(BaseModel):
     fats: Optional[float] = None
     carbs: Optional[float] = None
     # Процентная дельта (приоритет над абсолютной): итог = base × (1 + pct/100)
-    calories_pct: Optional[float] = None
-    proteins_pct: Optional[float] = None
-    fats_pct: Optional[float] = None
-    carbs_pct: Optional[float] = None
     calories_per_100g: Optional[int] = None
     proteins_per_100g: Optional[float] = None
     fats_per_100g: Optional[float] = None
@@ -166,10 +162,6 @@ class ModificationOptionUpdate(BaseModel):
     proteins: Optional[float] = None
     fats: Optional[float] = None
     carbs: Optional[float] = None
-    calories_pct: Optional[float] = None
-    proteins_pct: Optional[float] = None
-    fats_pct: Optional[float] = None
-    carbs_pct: Optional[float] = None
     calories_per_100g: Optional[int] = None
     proteins_per_100g: Optional[float] = None
     fats_per_100g: Optional[float] = None

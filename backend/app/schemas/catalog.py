@@ -43,10 +43,6 @@ class ModificationOptionOut(BaseModel):
     proteins: Optional[float] = None
     fats: Optional[float] = None
     carbs: Optional[float] = None
-    calories_pct: Optional[float] = None
-    proteins_pct: Optional[float] = None
-    fats_pct: Optional[float] = None
-    carbs_pct: Optional[float] = None
     calories_per_100g: Optional[int] = None
     proteins_per_100g: Optional[float] = None
     fats_per_100g: Optional[float] = None

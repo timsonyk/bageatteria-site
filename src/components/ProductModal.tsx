@@ -147,29 +147,18 @@ function ProductCard({
     if (fat == null) fat = pickFallback(currentSize?.fats, product.fats);
     if (carb == null) carb = pickFallback(currentSize?.carbs, product.carbs);
 
-    // Применяем pct и абсолют (для добавок типа «+1 яйцо»)
-    const applyPctOrAbs = (
+    // Абсолютные дельты (для добавок типа «+1 яйцо») — только если per-100g не задано
+    const addAbs = (
       baseVal: number | null | undefined,
-      pct: number | null | undefined,
       abs: number | null | undefined,
-    ): number | null | undefined => {
-      if (baseVal == null) return baseVal;
-      if (pct != null) return baseVal * (1 + pct / 100);
-      if (abs != null) return baseVal + abs;
-      return baseVal;
-    };
+    ) => (baseVal == null || abs == null ? baseVal : baseVal + abs);
     modGroups.forEach((g) =>
       g.options.forEach((o) => {
         if (!selectedOptions.has(o.id)) return;
-        // Только если НЕТ per-100g — применяем legacy дельты
-        if (o.calories_per_100g == null)
-          kcal = applyPctOrAbs(kcal, o.calories_pct, o.calories);
-        if (o.proteins_per_100g == null)
-          prot = applyPctOrAbs(prot, o.proteins_pct, o.proteins);
-        if (o.fats_per_100g == null)
-          fat = applyPctOrAbs(fat, o.fats_pct, o.fats);
-        if (o.carbs_per_100g == null)
-          carb = applyPctOrAbs(carb, o.carbs_pct, o.carbs);
+        if (o.calories_per_100g == null) kcal = addAbs(kcal, o.calories);
+        if (o.proteins_per_100g == null) prot = addAbs(prot, o.proteins);
+        if (o.fats_per_100g == null) fat = addAbs(fat, o.fats);
+        if (o.carbs_per_100g == null) carb = addAbs(carb, o.carbs);
       })
     );
 

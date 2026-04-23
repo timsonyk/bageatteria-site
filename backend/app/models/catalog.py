@@ -133,12 +133,6 @@ class ModificationOption(Base):
     proteins = Column(Float, nullable=True)
     fats = Column(Float, nullable=True)
     carbs = Column(Float, nullable=True)
-    # Процентное изменение КБЖУ: итог = base × (1 + pct/100).
-    # Пример: -82.5 означает «−82.5% от базы». 0 = нет изменения.
-    calories_pct = Column(Float, nullable=True)
-    proteins_pct = Column(Float, nullable=True)
-    fats_pct = Column(Float, nullable=True)
-    carbs_pct = Column(Float, nullable=True)
     # КБЖУ на 100 г — ПОЛНАЯ замена базы (не дельта).
     # Когда опция выбрана, итог = option.*_per_100g × размер / 100.
     calories_per_100g = Column(Integer, nullable=True)
