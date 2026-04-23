@@ -1,7 +1,7 @@
 from typing import Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
@@ -82,39 +82,40 @@ def list_categories(db: Session = Depends(get_db)):
     return categories
 
 
-def _normalize_url(url: str | None, base: str) -> str | None:
-    """Normalize localhost URLs to current host."""
+def _to_relative(url: str | None) -> str | None:
+    """Любой URL картинки — к относительному `/uploads/...`.
+
+    - уже относительный → оставляем;
+    - абсолютный c путём `/uploads/...` (наш домен, localhost, docker-внутренний
+      `backend:8000` и т.п.) → возвращаем только путь;
+    - прочее абсолютное (чужой CDN) → оставляем как есть.
+    Клиент сам прикрепляет публичный хост через NEXT_PUBLIC_MEDIA_URL.
+    """
     if not url:
         return None
     try:
         parsed = urlparse(url)
     except Exception:
         return url
-
-    if not parsed.scheme and url.startswith("/"):
-        return f"{base}{url}"
-
-    if parsed.netloc in ("localhost", "localhost:8000", "127.0.0.1", "127.0.0.1:8000"):
-        return f"{base}{parsed.path}"
-
+    if not parsed.scheme:
+        return url
+    if parsed.path.startswith("/uploads/"):
+        return parsed.path
     return url
 
 
-def _normalize_product_media(product: ProductOut, base: str) -> ProductOut:
-    """Normalize media URLs in product."""
+def _normalize_product_media(product: ProductOut) -> ProductOut:
     data = product.model_dump()
     if data.get("media"):
-        data["media"] = [_normalize_url(m, base) for m in data["media"]]
-    # Also normalize modification option images
+        data["media"] = [_to_relative(m) for m in data["media"]]
     for group in data.get("modification_groups", []):
         for option in group.get("options", []):
-            option["image_url"] = _normalize_url(option.get("image_url"), base)
+            option["image_url"] = _to_relative(option.get("image_url"))
     return ProductOut(**data)
 
 
 @router.get("/products", response_model=list[ProductOut])
 def list_products(
-    request: Request,
     category_id: int | None = Query(None),
     store_location_id: int | None = Query(None),
     active_only: bool = True,
@@ -137,19 +138,11 @@ def list_products(
         query = query.filter(Product.id.in_(available_product_ids))
 
     products = query.order_by(Product.sort_order).all()
-
-    # Normalize URLs
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-    host = forwarded_host or request.headers.get("host") or request.url.netloc
-    scheme = forwarded_proto or request.url.scheme
-    base = f"{scheme}://{host}".rstrip("/")
-
-    return [_normalize_product_media(ProductOut.model_validate(p), base) for p in products]
+    return [_normalize_product_media(ProductOut.model_validate(p)) for p in products]
 
 
 @router.get("/products/{product_id}", response_model=ProductOut)
-def get_product(product_id: int, request: Request, db: Session = Depends(get_db)):
+def get_product(product_id: int, db: Session = Depends(get_db)):
     product = (
         db.query(Product)
         .options(
@@ -161,55 +154,21 @@ def get_product(product_id: int, request: Request, db: Session = Depends(get_db)
     )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    # Normalize URLs
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-    host = forwarded_host or request.headers.get("host") or request.url.netloc
-    scheme = forwarded_proto or request.url.scheme
-    base = f"{scheme}://{host}".rstrip("/")
-
-    return _normalize_product_media(ProductOut.model_validate(product), base)
+    return _normalize_product_media(ProductOut.model_validate(product))
 
 
 @router.get("/banners", response_model=list[BannerOut])
-def list_banners(request: Request, db: Session = Depends(get_db)):
+def list_banners(db: Session = Depends(get_db)):
     banners = (
         db.query(Banner)
         .filter(Banner.is_active == True)  # noqa: E712
         .order_by(Banner.sort_order)
         .all()
     )
-
-    # Normalize stored URLs (e.g. old http://localhost:8000/uploads/...) to the current public host.
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-    host = forwarded_host or request.headers.get("host") or request.url.netloc
-    scheme = forwarded_proto or request.url.scheme
-    base = f"{scheme}://{host}".rstrip("/")
-
-    def normalize_image_url(image_url: str | None) -> str | None:
-        if not image_url:
-            return None
-        try:
-            parsed = urlparse(image_url)
-        except Exception:
-            return image_url
-
-        # Relative URLs → make absolute to current host
-        if not parsed.scheme and image_url.startswith("/"):
-            return f"{base}{image_url}"
-
-        # Absolute URL but points to local dev host → rewrite to current host
-        if parsed.netloc in ("localhost", "localhost:8000", "127.0.0.1", "127.0.0.1:8000"):
-            return f"{base}{parsed.path}"
-
-        return image_url
-
     out: list[BannerOut] = []
     for b in banners:
         dto = BannerOut.model_validate(b)
-        dto = BannerOut(**{**dto.model_dump(), "image_url": normalize_image_url(dto.image_url)})
+        dto = BannerOut(**{**dto.model_dump(), "image_url": _to_relative(dto.image_url)})
         out.append(dto)
     return out
 
@@ -241,7 +200,6 @@ def list_faqs(db: Session = Depends(get_db)):
 @router.get("/recommendations/{category_id}", response_model=list[ProductOut])
 def get_recommendations(
     category_id: int,
-    request: Request,
     db: Session = Depends(get_db),
 ):
     """Get recommended products for a category."""
@@ -267,13 +225,5 @@ def get_recommendations(
     # Sort products by the order in recommendations
     products_dict = {p.id: p for p in products}
     sorted_products = [products_dict[pid] for pid in product_ids if pid in products_dict]
-
-    # Normalize URLs
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-    host = forwarded_host or request.headers.get("host") or request.url.netloc
-    scheme = forwarded_proto or request.url.scheme
-    base = f"{scheme}://{host}".rstrip("/")
-
-    return [_normalize_product_media(ProductOut.model_validate(p), base) for p in sorted_products]
+    return [_normalize_product_media(ProductOut.model_validate(p)) for p in sorted_products]
 
