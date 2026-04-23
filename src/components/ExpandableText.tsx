@@ -60,7 +60,7 @@ export function ExpandableText({
             e.stopPropagation();
             setExpanded((v) => !v);
           }}
-          className="text-[13px] text-[#007aff] mt-1 active:opacity-60"
+          className="text-[13px] text-[#1A1410] font-medium underline underline-offset-2 decoration-[#8E8E93] decoration-1 mt-1 active:opacity-60"
         >
           {expanded ? lessLabel : moreLabel}
         </button>
