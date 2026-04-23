@@ -129,6 +129,12 @@ class ModificationOptionCreate(BaseModel):
     is_default: bool = False
     sort_order: int = 0
     is_active: bool = True
+    # Абсолютная дельта КБЖУ (на порцию), напр. «+1 яйцо» = +55 ккал
+    calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
+    # Процентная дельта (приоритет над абсолютной): итог = base × (1 + pct/100)
     calories_pct: Optional[float] = None
     proteins_pct: Optional[float] = None
     fats_pct: Optional[float] = None
@@ -142,6 +148,10 @@ class ModificationOptionUpdate(BaseModel):
     is_default: Optional[bool] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
+    calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
     calories_pct: Optional[float] = None
     proteins_pct: Optional[float] = None
     fats_pct: Optional[float] = None
