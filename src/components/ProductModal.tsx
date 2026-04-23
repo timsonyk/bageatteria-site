@@ -102,18 +102,52 @@ function ProductCard({
     : parseFloat(product.base_price);
   const price = basePrice + modsExtra;
 
-  // Динамический КБЖУ: база из выбранного размера (иначе Product) + модификации.
-  // Модификации применяются так: сначала процентные дельты (итог = base×(1+pct/100)),
-  // затем абсолютные (для совместимости). Если обе — применяется процент.
+  // Динамический КБЖУ. Приоритетный путь:
+  //   per_100g (базы или выбранной опции) × volume_ml выбранного размера / 100
+  // Если нет per_100g или volume_ml — fallback на per-portion (ProductSize/Product).
+  // Модификации: per_100g опции ПОЛНОСТЬЮ заменяет базовый per_100g.
+  // Потом применяем процент и абсолют (для «+1 яйцо» и пр.).
   const dynamicKbju = useMemo(() => {
     const currentSize = hasSizes ? sortedSizes[selectedSizeIndex] : null;
-    const pick = (s: number | null | undefined, p: number | null | undefined) =>
-      s != null ? s : p;
-    let kcal = pick(currentSize?.calories, product.calories);
-    let prot = pick(currentSize?.proteins, product.proteins);
-    let fat = pick(currentSize?.fats, product.fats);
-    let carb = pick(currentSize?.carbs, product.carbs);
+    const volume =
+      (currentSize && currentSize.volume_ml) ||
+      (product.weight ? parseInt(product.weight, 10) : null);
 
+    // Base per-100g: из продукта (или переопределённое выбранной опцией)
+    let kcal100 = product.calories_per_100g;
+    let prot100 = product.proteins_per_100g;
+    let fat100 = product.fats_per_100g;
+    let carb100 = product.carbs_per_100g;
+
+    // Per-100g replacement from selected options (берём ПОСЛЕДНЕЕ найденное)
+    modGroups.forEach((g) =>
+      g.options.forEach((o) => {
+        if (!selectedOptions.has(o.id)) return;
+        if (o.calories_per_100g != null) kcal100 = o.calories_per_100g;
+        if (o.proteins_per_100g != null) prot100 = o.proteins_per_100g;
+        if (o.fats_per_100g != null) fat100 = o.fats_per_100g;
+        if (o.carbs_per_100g != null) carb100 = o.carbs_per_100g;
+      })
+    );
+
+    // Считаем per-portion из per-100g × volume / 100 (если всё есть)
+    const fromPer100 = (v: number | null | undefined) =>
+      v != null && volume ? (v * volume) / 100 : null;
+
+    let kcal: number | null | undefined = fromPer100(kcal100);
+    let prot: number | null | undefined = fromPer100(prot100);
+    let fat: number | null | undefined = fromPer100(fat100);
+    let carb: number | null | undefined = fromPer100(carb100);
+
+    // Fallback на legacy per-portion если per-100g не задано
+    const pickFallback = (s: number | null | undefined, p: number | null | undefined) =>
+      s != null ? s : p;
+    if (kcal == null) kcal = pickFallback(currentSize?.calories, product.calories);
+    if (prot == null) prot = pickFallback(currentSize?.proteins, product.proteins);
+    if (fat == null) fat = pickFallback(currentSize?.fats, product.fats);
+    if (carb == null) carb = pickFallback(currentSize?.carbs, product.carbs);
+
+    // Применяем pct и абсолют (для добавок типа «+1 яйцо»)
     const applyPctOrAbs = (
       baseVal: number | null | undefined,
       pct: number | null | undefined,
@@ -124,14 +158,18 @@ function ProductCard({
       if (abs != null) return baseVal + abs;
       return baseVal;
     };
-
     modGroups.forEach((g) =>
       g.options.forEach((o) => {
         if (!selectedOptions.has(o.id)) return;
-        kcal = applyPctOrAbs(kcal, o.calories_pct, o.calories);
-        prot = applyPctOrAbs(prot, o.proteins_pct, o.proteins);
-        fat = applyPctOrAbs(fat, o.fats_pct, o.fats);
-        carb = applyPctOrAbs(carb, o.carbs_pct, o.carbs);
+        // Только если НЕТ per-100g — применяем legacy дельты
+        if (o.calories_per_100g == null)
+          kcal = applyPctOrAbs(kcal, o.calories_pct, o.calories);
+        if (o.proteins_per_100g == null)
+          prot = applyPctOrAbs(prot, o.proteins_pct, o.proteins);
+        if (o.fats_per_100g == null)
+          fat = applyPctOrAbs(fat, o.fats_pct, o.fats);
+        if (o.carbs_per_100g == null)
+          carb = applyPctOrAbs(carb, o.carbs_pct, o.carbs);
       })
     );
 
@@ -143,7 +181,7 @@ function ProductCard({
       fats: clamp1(fat),
       carbs: clamp1(carb),
     };
-  }, [hasSizes, sortedSizes, selectedSizeIndex, product.calories, product.proteins, product.fats, product.carbs, modGroups, selectedOptions]);
+  }, [hasSizes, sortedSizes, selectedSizeIndex, product, modGroups, selectedOptions]);
 
   const currentSizeId = hasSizes ? sortedSizes[selectedSizeIndex]?.id ?? null : null;
   const currentOptionIds = useMemo(

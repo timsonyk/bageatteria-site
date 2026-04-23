@@ -42,6 +42,10 @@ class ProductCreate(BaseModel):
     is_featured_menu: bool = False
     featured_text: Optional[str] = None
     media: Optional[list] = None
+    calories_per_100g: Optional[int] = None
+    proteins_per_100g: Optional[float] = None
+    fats_per_100g: Optional[float] = None
+    carbs_per_100g: Optional[float] = None
 
 
 class ProductUpdate(BaseModel):
@@ -55,6 +59,10 @@ class ProductUpdate(BaseModel):
     proteins: Optional[float] = None
     fats: Optional[float] = None
     carbs: Optional[float] = None
+    calories_per_100g: Optional[int] = None
+    proteins_per_100g: Optional[float] = None
+    fats_per_100g: Optional[float] = None
+    carbs_per_100g: Optional[float] = None
     ingredients: Optional[str] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
@@ -82,6 +90,7 @@ class ProductSizeCreate(BaseModel):
     product_id: int
     name: str
     volume: Optional[str] = None
+    volume_ml: Optional[int] = None
     base_price: float
     sort_order: int = 0
     calories: Optional[int] = None
@@ -93,6 +102,7 @@ class ProductSizeCreate(BaseModel):
 class ProductSizeUpdate(BaseModel):
     name: Optional[str] = None
     volume: Optional[str] = None
+    volume_ml: Optional[int] = None
     base_price: Optional[float] = None
     sort_order: Optional[int] = None
     calories: Optional[int] = None
@@ -139,6 +149,10 @@ class ModificationOptionCreate(BaseModel):
     proteins_pct: Optional[float] = None
     fats_pct: Optional[float] = None
     carbs_pct: Optional[float] = None
+    calories_per_100g: Optional[int] = None
+    proteins_per_100g: Optional[float] = None
+    fats_per_100g: Optional[float] = None
+    carbs_per_100g: Optional[float] = None
 
 
 class ModificationOptionUpdate(BaseModel):
@@ -156,6 +170,10 @@ class ModificationOptionUpdate(BaseModel):
     proteins_pct: Optional[float] = None
     fats_pct: Optional[float] = None
     carbs_pct: Optional[float] = None
+    calories_per_100g: Optional[int] = None
+    proteins_per_100g: Optional[float] = None
+    fats_per_100g: Optional[float] = None
+    carbs_per_100g: Optional[float] = None
 
 
 class BannerCreate(BaseModel):

@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
-"""Импорт КБЖУ + выравнивание размеров под файл.
+"""Импорт КБЖУ на 100 г + размеры из csv.
 
-Input:
-  /tmp/kbju_base.csv:          base_norm,size_ml,kcal,prot,fat,carb (per-порцию)
-  /tmp/kbju_milks.csv:          base_norm,kind,kcal_pct,prot_pct,fat_pct,carb_pct
-  /tmp/kbju_milk_products.csv:  base_norm (какие товары имеют молоко)
+Вход:
+  /tmp/kbju_base.csv:            base_norm, sizes_ml, kcal_100, prot_100, fat_100, carb_100
+  /tmp/kbju_milks.csv:            base_norm, kind, kcal_100, prot_100, fat_100, carb_100
+  /tmp/kbju_milk_products.csv:    base_norm
 
 Логика:
- - База (file main rows):
-     * Multi-size продукт (>1 main row): обновляет ProductSize.volume и КБЖУ
-       по порядку (file 1-й → наш 1-й по sort_order).
-     * Single-size (1 main row с size_ml): обновляет Product.weight и КБЖУ.
-     * Single-size без size_ml: только КБЖУ.
- - Молоко: для каждого из 12 напитков создаёт ОТДЕЛЬНУЮ группу «Тип молока»,
-   опции с *_pct полями (процентная дельта — итог = base × (1+pct/100)).
-   Старая shared/per-product группа удаляется.
+  - Product: пишем calories_per_100g etc. Если sizes_ml один размер — обновляем
+    Product.weight + создаём/обновляем единственный ProductSize с volume_ml.
+    Если несколько — синхронизируем ProductSize по списку (create/update/delete).
+  - Модификация «Тип молока»: создаём для каждого drink с молоком ОТДЕЛЬНУЮ
+    группу, опции с calories_per_100g etc (полная замена базы в расчёте).
 """
 from __future__ import annotations
 
@@ -22,6 +19,7 @@ import argparse
 import csv
 import re
 from pathlib import Path
+from decimal import Decimal
 
 from app.db.session import SessionLocal
 from app.models.catalog import (
@@ -29,6 +27,7 @@ from app.models.catalog import (
     ModificationOption,
     ModificationGroupProduct,
     Product,
+    ProductSize,
 )
 
 
@@ -44,6 +43,8 @@ def norm_name(s):
 
 MILK_GROUP_NAME = "Тип молока"
 MILK_OPTIONS_ORDER = ["Обычное", "Кокосовое", "Миндальное", "Банановое", "Фундучное", "Овсяное"]
+# для матча-напитков base = уже кокосовое
+MATCHA_DEFAULT_COCONUT = {"латте матча зеленый", "айс матча латте зеленый"}
 
 
 def main():
@@ -64,70 +65,73 @@ def main():
         all_products = db.query(Product).all()
         by_norm = {norm_name(p.name): p for p in all_products}
 
-        # === 1. База: выравнивание размеров + КБЖУ ===
-        groups_by_base: dict[str, list[dict]] = {}
+        # === База: per-100g + размеры ===
+        p_hits, s_touched, s_created, misses = 0, 0, 0, []
         for r in base_rows:
-            groups_by_base.setdefault(r["base_norm"], []).append(r)
-
-        p_hits, s_hits, size_updates, weight_updates, misses = 0, 0, 0, 0, []
-        for base_norm, rows in groups_by_base.items():
+            base_norm = r["base_norm"]
             product = by_norm.get(base_norm)
             if not product:
                 misses.append(base_norm)
                 continue
-            rows = sorted(rows, key=lambda r: (r["size_ml"] == "", int(r["size_ml"]) if r["size_ml"] else 0))
-            sizes = sorted(product.sizes, key=lambda s: s.sort_order)
-            if len(rows) > 1 and sizes:
-                # multi-size: обновляем volume + КБЖУ по каждому ProductSize
-                for src, dst in zip(rows, sizes):
-                    new_vol = f"{src['size_ml']} мл" if src["size_ml"] else dst.volume
-                    if new_vol and dst.volume != new_vol:
-                        dst.volume = new_vol
-                        size_updates += 1
-                    dst.calories = int(src["kcal"])
-                    dst.proteins = float(src["prot"])
-                    dst.fats = float(src["fat"])
-                    dst.carbs = float(src["carb"])
-                    s_hits += 1
-            else:
-                # single-size
-                r = rows[0]
-                if r["size_ml"]:
-                    # обновляем Product.weight по файлу
-                    new_weight = f"{r['size_ml']} мл"
-                    if product.weight != new_weight:
-                        product.weight = new_weight
-                        weight_updates += 1
-                product.calories = int(r["kcal"])
-                product.proteins = float(r["prot"])
-                product.fats = float(r["fat"])
-                product.carbs = float(r["carb"])
-                p_hits += 1
-        db.commit()
-        print(f"Обновлено: Product={p_hits}, ProductSize={s_hits}; volume-правок={size_updates}, weight-правок={weight_updates}")
-        if misses:
-            print(f"Не сматчились ({len(misses)}):")
-            for m in misses:
-                print(f"  {m}")
+            product.calories_per_100g = int(float(r["kcal_100"]))
+            product.proteins_per_100g = float(r["prot_100"])
+            product.fats_per_100g = float(r["fat_100"])
+            product.carbs_per_100g = float(r["carb_100"])
+            p_hits += 1
 
-        # === 2. Удаляем старую группу «Тип молока» ===
-        old_groups = (
-            db.query(ModificationGroup)
-            .filter(ModificationGroup.name == MILK_GROUP_NAME)
-            .all()
-        )
+            sizes_ml_list = [int(x) for x in r["sizes_ml"].split(";") if x.strip()]
+            if not sizes_ml_list:
+                # обновим только volume_ml на существующих ProductSize, если есть
+                for ps in product.sizes:
+                    if ps.volume_ml is None and ps.volume:
+                        m = re.search(r"(\d+)", ps.volume)
+                        if m:
+                            ps.volume_ml = int(m.group(1))
+                            s_touched += 1
+                continue
+
+            existing = sorted(product.sizes, key=lambda s: s.sort_order)
+            # sync: сопоставляем file sizes → DB sizes по sort_order
+            if len(sizes_ml_list) == 1 and not existing:
+                # single-size без ProductSize — обновляем Product.weight
+                product.weight = f"{sizes_ml_list[0]} мл"
+                continue
+
+            # multi-size (или single-size с существующим ProductSize)
+            for idx, vol_ml in enumerate(sizes_ml_list):
+                if idx < len(existing):
+                    ps = existing[idx]
+                    if ps.volume_ml != vol_ml:
+                        ps.volume_ml = vol_ml
+                    new_vol = f"{vol_ml} мл"
+                    if ps.volume != new_vol:
+                        ps.volume = new_vol
+                    s_touched += 1
+                else:
+                    # создаём недостающий размер с дефолтной ценой
+                    default_price = existing[0].base_price if existing else Decimal(product.base_price)
+                    db.add(ProductSize(
+                        product_id=product.id,
+                        name=["S","M","L"][min(idx, 2)] + (f"{idx+1}" if idx > 2 else ""),
+                        volume=f"{vol_ml} мл",
+                        volume_ml=vol_ml,
+                        base_price=default_price,
+                        sort_order=idx,
+                    ))
+                    s_created += 1
+        db.commit()
+        print(f"Product per-100g: {p_hits}. ProductSize: touched={s_touched}, created={s_created}")
+        if misses:
+            print(f"Не сматчились {len(misses)}: {misses[:10]}{'...' if len(misses)>10 else ''}")
+
+        # === «Тип молока» пересоздание per-product с per-100g ===
+        old_groups = db.query(ModificationGroup).filter(ModificationGroup.name == MILK_GROUP_NAME).all()
         for og in old_groups:
-            db.query(ModificationGroupProduct).filter(
-                ModificationGroupProduct.group_id == og.id
-            ).delete(synchronize_session=False)
-            db.query(ModificationOption).filter(
-                ModificationOption.group_id == og.id
-            ).delete(synchronize_session=False)
+            db.query(ModificationGroupProduct).filter(ModificationGroupProduct.group_id == og.id).delete(synchronize_session=False)
+            db.query(ModificationOption).filter(ModificationOption.group_id == og.id).delete(synchronize_session=False)
             db.delete(og)
         db.commit()
-        print(f"Старых групп «{MILK_GROUP_NAME}» удалено: {len(old_groups)}")
 
-        # === 3. Per-product «Тип молока» с процентными дельтами ===
         milks_by_product: dict[str, dict[str, dict]] = {}
         for r in milk_rows:
             milks_by_product.setdefault(r["base_norm"], {})[r["kind"]] = r
@@ -137,35 +141,36 @@ def main():
             p = by_norm.get(base_norm)
             if not p:
                 continue
-            deltas = milks_by_product.get(base_norm, {})
-            if not deltas:
+            option_per100 = milks_by_product.get(base_norm, {})
+            if not option_per100:
                 continue
-            grp = ModificationGroup(
-                name=MILK_GROUP_NAME, type="single",
-                min_count=1, max_count=1, sort_order=0, is_active=True,
-            )
+            grp = ModificationGroup(name=MILK_GROUP_NAME, type="single",
+                                    min_count=1, max_count=1, sort_order=0, is_active=True)
             db.add(grp); db.flush()
+            coconut_is_default = base_norm in MATCHA_DEFAULT_COCONUT
             for idx, kind in enumerate(MILK_OPTIONS_ORDER):
+                is_def = (kind == "Кокосовое") if coconut_is_default else (kind == "Обычное")
                 op = ModificationOption(
-                    group_id=grp.id, name=kind,
-                    extra_price=0,
-                    is_default=(kind == "Обычное"),
-                    sort_order=idx, is_active=True,
+                    group_id=grp.id, name=kind, extra_price=0,
+                    is_default=is_def, sort_order=idx, is_active=True,
                 )
-                if kind == "Обычное":
-                    op.calories_pct = 0.0; op.proteins_pct = 0.0; op.fats_pct = 0.0; op.carbs_pct = 0.0
-                elif kind in deltas:
-                    d = deltas[kind]
-                    op.calories_pct = float(d["kcal_pct"])
-                    op.proteins_pct = float(d["prot_pct"])
-                    op.fats_pct = float(d["fat_pct"])
-                    op.carbs_pct = float(d["carb_pct"])
+                if kind == "Обычное" and not coconut_is_default:
+                    # «Обычное» = базовый per-100g Product-а
+                    op.calories_per_100g = p.calories_per_100g
+                    op.proteins_per_100g = p.proteins_per_100g
+                    op.fats_per_100g = p.fats_per_100g
+                    op.carbs_per_100g = p.carbs_per_100g
+                elif kind in option_per100:
+                    src = option_per100[kind]
+                    op.calories_per_100g = int(float(src["kcal_100"]))
+                    op.proteins_per_100g = float(src["prot_100"])
+                    op.fats_per_100g = float(src["fat_100"])
+                    op.carbs_per_100g = float(src["carb_100"])
                 db.add(op)
             db.add(ModificationGroupProduct(group_id=grp.id, product_id=p.id))
             created += 1
-
         db.commit()
-        print(f"Создано per-product групп «Тип молока»: {created}")
+        print(f"«Тип молока» групп создано: {created}")
 
     finally:
         db.close()

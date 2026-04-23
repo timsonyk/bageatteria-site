@@ -13,6 +13,7 @@ export interface ProductSize {
   product_id: number;
   name: string;
   volume: string;
+  volume_ml?: number | null;
   base_price: string;
   sort_order: number;
   calories?: number | null;
@@ -35,10 +36,14 @@ export interface Product {
   base_price: string;
   size_label: string | null;
   weight: string | null;  // "400 г" или "300 мл"
-  calories: number | null;  // ккал
-  proteins: number | null;  // белки, г
-  fats: number | null;  // жиры, г
-  carbs: number | null;  // углеводы, г
+  calories: number | null;  // ккал (per portion legacy)
+  proteins: number | null;
+  fats: number | null;
+  carbs: number | null;
+  calories_per_100g?: number | null;
+  proteins_per_100g?: number | null;
+  fats_per_100g?: number | null;
+  carbs_per_100g?: number | null;
   ingredients: string | null;  // состав
   is_active: boolean;
   is_recommended_menu?: boolean;
@@ -86,6 +91,11 @@ export interface ModificationOption {
   proteins_pct?: number | null;
   fats_pct?: number | null;
   carbs_pct?: number | null;
+  // КБЖУ на 100 г — полная замена базы
+  calories_per_100g?: number | null;
+  proteins_per_100g?: number | null;
+  fats_per_100g?: number | null;
+  carbs_per_100g?: number | null;
 }
 
 // Группа модификаций

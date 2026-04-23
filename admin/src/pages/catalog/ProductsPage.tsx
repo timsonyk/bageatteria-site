@@ -641,6 +641,25 @@ export const ProductsPage = () => {
               <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="45.2" />
             </Form.Item>
           </Space>
+          <div style={{ fontSize: 12, color: '#666', background: '#FAFAFA', padding: '6px 10px', borderRadius: 4, marginBottom: 8 }}>
+            <b>КБЖУ на 100 г</b> — если заполнено, итог автоматически вычисляется
+            как <code>значение × объём_размера / 100</code>. Актуально для напитков.
+            Без него используются «per-portion» поля выше.
+          </div>
+          <Space style={{ width: '100%' }}>
+            <Form.Item name="calories_per_100g" label="Ккал/100г" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} placeholder="56" />
+            </Form.Item>
+            <Form.Item name="proteins_per_100g" label="Белки/100г" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="3.1" />
+            </Form.Item>
+            <Form.Item name="fats_per_100g" label="Жиры/100г" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="3.5" />
+            </Form.Item>
+            <Form.Item name="carbs_per_100g" label="Углеводы/100г" style={{ flex: 1 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="4.2" />
+            </Form.Item>
+          </Space>
           <Form.Item name="ingredients" label="Состав">
             <Input.TextArea rows={2} placeholder="Мука, сахар, молоко, яйца..." />
           </Form.Item>
@@ -742,16 +761,19 @@ export const ProductsPage = () => {
             <Input />
           </Form.Item>
           <Space style={{ width: '100%' }} align="start">
-            <Form.Item name="name" label="Название" rules={[{ required: true }]} style={{ width: 120 }}>
+            <Form.Item name="name" label="Название" rules={[{ required: true }]} style={{ width: 110 }}>
               <Input placeholder="S / M / L" />
             </Form.Item>
-            <Form.Item name="volume" label="Объём" style={{ width: 120 }}>
+            <Form.Item name="volume" label="Объём (текст)" style={{ width: 120 }}>
               <Input placeholder="200 мл" />
             </Form.Item>
-            <Form.Item name="base_price" label="Цена" rules={[{ required: true }]} style={{ width: 120 }}>
+            <Form.Item name="volume_ml" label="Объём, мл" style={{ width: 110 }}>
+              <InputNumber style={{ width: '100%' }} min={0} placeholder="200" />
+            </Form.Item>
+            <Form.Item name="base_price" label="Цена" rules={[{ required: true }]} style={{ width: 110 }}>
               <InputNumber style={{ width: '100%' }} min={0} suffix="₽" />
             </Form.Item>
-            <Form.Item name="sort_order" label="Сортировка" initialValue={0} style={{ width: 100 }}>
+            <Form.Item name="sort_order" label="Сорт." initialValue={0} style={{ width: 80 }}>
               <InputNumber style={{ width: '100%' }} />
             </Form.Item>
           </Space>

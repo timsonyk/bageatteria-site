@@ -19,6 +19,7 @@ class ProductSizeOut(BaseModel):
     id: int
     name: str
     volume: Optional[str] = None
+    volume_ml: Optional[int] = None
     base_price: float
     sort_order: int
     calories: Optional[int] = None
@@ -46,6 +47,10 @@ class ModificationOptionOut(BaseModel):
     proteins_pct: Optional[float] = None
     fats_pct: Optional[float] = None
     carbs_pct: Optional[float] = None
+    calories_per_100g: Optional[int] = None
+    proteins_per_100g: Optional[float] = None
+    fats_per_100g: Optional[float] = None
+    carbs_per_100g: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -77,6 +82,10 @@ class ProductOut(BaseModel):
     proteins: Optional[float] = None
     fats: Optional[float] = None
     carbs: Optional[float] = None
+    calories_per_100g: Optional[int] = None
+    proteins_per_100g: Optional[float] = None
+    fats_per_100g: Optional[float] = None
+    carbs_per_100g: Optional[float] = None
     ingredients: Optional[str] = None
     is_active: bool
     is_recommended_menu: bool = False

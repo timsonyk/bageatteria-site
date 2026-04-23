@@ -306,54 +306,69 @@ export const ModificationsPage = () => {
               <div style={{ marginBottom: 4, fontSize: 12, color: '#666', background: '#FAFAFA', padding: '8px 10px', borderRadius: 4 }}>
                 <div style={{ fontWeight: 500, marginBottom: 4 }}>Как это работает</div>
                 <div style={{ marginBottom: 2 }}>
-                  • <b>Проценты</b> — замена части состава:{' '}
-                  <code>итог = база × (1 + pct/100)</code>.
-                  Пример: Латте 202 ккал с банановым молоком (−30%) → 202×0.7 = 141 ккал.
+                  • <b>На 100 г</b> (приоритет) — опция <i>полностью заменяет</i> базу
+                  для этого поля. Итог = <code>значение × объём_размера / 100</code>.
+                  Пример: капучино на кокосовом 23 ккал/100г → 200мл = 46 ккал, 300мл = 69.
                 </div>
                 <div style={{ marginBottom: 2 }}>
-                  • <b>Абсолют</b> — добавление фиксированного количества:{' '}
-                  <code>итог = база + значение</code>.
-                  Пример: +1 яйцо = +55 ккал, независимо от размера блюда.
+                  • <b>Проценты</b> — замена состава, но пропорциональная:{' '}
+                  <code>итог = база × (1 + pct/100)</code>.
+                </div>
+                <div style={{ marginBottom: 2 }}>
+                  • <b>Абсолют</b> — добавление к базе: <code>итог = база + значение</code>.
+                  Пример: +1 яйцо = +55 ккал, независимо от размера.
                 </div>
                 <div>
-                  Заполните <b>ОДИН</b> столбец на строку (для каждого поля
-                  отдельно). Если оба заданы — применяется процент.
+                  Заполни <b>ОДИН</b> столбец. Приоритет: per-100 г → проценты → абсолют.
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '90px 120px 120px', gap: '8px 16px', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontSize: 12, color: '#888', gridColumn: 2 }}>Абсолют</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '90px 120px 120px 120px', gap: '8px 16px', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: '#888', gridColumn: 2 }}>На 100 г</div>
                 <div style={{ fontSize: 12, color: '#888' }}>Проценты</div>
+                <div style={{ fontSize: 12, color: '#888' }}>Абсолют</div>
 
                 <div>Ккал</div>
-                <Form.Item name="calories" style={{ margin: 0 }}>
-                  <InputNumber style={{ width: '100%' }} step={1} placeholder="+55" />
+                <Form.Item name="calories_per_100g" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} min={0} step={1} placeholder="23" />
                 </Form.Item>
                 <Form.Item name="calories_pct" style={{ margin: 0 }}>
                   <InputNumber style={{ width: '100%' }} step={1} suffix="%" placeholder="-50" />
                 </Form.Item>
+                <Form.Item name="calories" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} step={1} placeholder="+55" />
+                </Form.Item>
 
                 <div>Белки, г</div>
-                <Form.Item name="proteins" style={{ margin: 0 }}>
-                  <InputNumber style={{ width: '100%' }} step={0.1} />
+                <Form.Item name="proteins_per_100g" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
                 </Form.Item>
                 <Form.Item name="proteins_pct" style={{ margin: 0 }}>
                   <InputNumber style={{ width: '100%' }} step={1} suffix="%" />
                 </Form.Item>
+                <Form.Item name="proteins" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} step={0.1} />
+                </Form.Item>
 
                 <div>Жиры, г</div>
-                <Form.Item name="fats" style={{ margin: 0 }}>
-                  <InputNumber style={{ width: '100%' }} step={0.1} />
+                <Form.Item name="fats_per_100g" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
                 </Form.Item>
                 <Form.Item name="fats_pct" style={{ margin: 0 }}>
                   <InputNumber style={{ width: '100%' }} step={1} suffix="%" />
                 </Form.Item>
+                <Form.Item name="fats" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} step={0.1} />
+                </Form.Item>
 
                 <div>Углеводы, г</div>
-                <Form.Item name="carbs" style={{ margin: 0 }}>
-                  <InputNumber style={{ width: '100%' }} step={0.1} />
+                <Form.Item name="carbs_per_100g" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
                 </Form.Item>
                 <Form.Item name="carbs_pct" style={{ margin: 0 }}>
                   <InputNumber style={{ width: '100%' }} step={1} suffix="%" />
+                </Form.Item>
+                <Form.Item name="carbs" style={{ margin: 0 }}>
+                  <InputNumber style={{ width: '100%' }} step={0.1} />
                 </Form.Item>
               </div>
               <Form.Item label="Изображение" style={{ marginBottom: 8 }}>

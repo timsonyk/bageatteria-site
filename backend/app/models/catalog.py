@@ -57,6 +57,11 @@ class Product(Base):
     fats = Column(Float, nullable=True)  # жиры, г
     carbs = Column(Float, nullable=True)  # углеводы, г
     ingredients = Column(Text, nullable=True)  # состав
+    # КБЖУ на 100 г — универсальный источник правды, умножается на volume_ml размера.
+    calories_per_100g = Column(Integer, nullable=True)
+    proteins_per_100g = Column(Float, nullable=True)
+    fats_per_100g = Column(Float, nullable=True)
+    carbs_per_100g = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     is_recommended_menu = Column(Boolean, default=False, nullable=False)
     is_recommended_favorites = Column(Boolean, default=False, nullable=False)
@@ -76,7 +81,8 @@ class ProductSize(Base):
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
     name = Column(String(50), nullable=False)  # S, M, L
-    volume = Column(String(50), nullable=True)  # 200 мл, 300 мл, 400 мл
+    volume = Column(String(50), nullable=True)  # 200 мл, 300 мл, 400 мл — для показа
+    volume_ml = Column(Integer, nullable=True)  # то же в числе для расчёта КБЖУ
     base_price = Column(Numeric(10, 2), nullable=False)
     sort_order = Column(Integer, default=0, nullable=False)
     # КБЖУ на порцию этого размера (nullable — не для всех товаров задано)
@@ -133,6 +139,12 @@ class ModificationOption(Base):
     proteins_pct = Column(Float, nullable=True)
     fats_pct = Column(Float, nullable=True)
     carbs_pct = Column(Float, nullable=True)
+    # КБЖУ на 100 г — ПОЛНАЯ замена базы (не дельта).
+    # Когда опция выбрана, итог = option.*_per_100g × размер / 100.
+    calories_per_100g = Column(Integer, nullable=True)
+    proteins_per_100g = Column(Float, nullable=True)
+    fats_per_100g = Column(Float, nullable=True)
+    carbs_per_100g = Column(Float, nullable=True)
 
     group = relationship("ModificationGroup", back_populates="options")
 
