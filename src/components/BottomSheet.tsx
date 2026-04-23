@@ -50,10 +50,51 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
     };
   }, [isOpen, onClose]);
 
+  // iOS Safari theme-color: серый #7c7c7b пока шторка открыта
+  useEffect(() => {
+    if (!isOpen) return;
+    const meta =
+      document.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ??
+      (() => {
+        const m = document.createElement("meta");
+        m.name = "theme-color";
+        document.head.appendChild(m);
+        return m;
+      })();
+    const prev = meta.getAttribute("content");
+    meta.setAttribute("content", "#7c7c7b");
+    return () => {
+      if (prev === null) meta.remove();
+      else meta.setAttribute("content", prev);
+    };
+  }, [isOpen]);
+
   if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50">
+      {/* Safe-area top fill — серая плашка #7c7c7b под статус-баром iOS */}
+      <div
+        className="absolute inset-x-0 top-0 pointer-events-none"
+        style={{
+          height: "env(safe-area-inset-top, 0px)",
+          backgroundColor: "#7c7c7b",
+          opacity: isAnimating ? 1 : 0,
+          transition: "opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
+          zIndex: 1,
+        }}
+      />
+      {/* Safe-area bottom fill — белая плашка под home indicator */}
+      <div
+        className="absolute inset-x-0 bottom-0 pointer-events-none"
+        style={{
+          height: "env(safe-area-inset-bottom, 0px)",
+          backgroundColor: "#FFFFFF",
+          opacity: isAnimating ? 1 : 0,
+          transition: "opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
+          zIndex: 2,
+        }}
+      />
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black transition-opacity duration-[400ms] ${

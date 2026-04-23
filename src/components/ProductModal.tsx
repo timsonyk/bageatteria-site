@@ -753,6 +753,17 @@ export function ProductModal({
 
   return (
     <div className="fixed inset-0 z-50">
+      {/* Safe-area top fill — серая плашка #7c7c7b под статус-баром iOS */}
+      <div
+        className="absolute inset-x-0 top-0 pointer-events-none"
+        style={{
+          height: "env(safe-area-inset-top, 0px)",
+          backgroundColor: "#7c7c7b",
+          opacity: isAnimating ? 1 : 0,
+          transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+          zIndex: 1,
+        }}
+      />
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black"
