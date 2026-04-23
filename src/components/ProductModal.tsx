@@ -558,6 +558,25 @@ export function ProductModal({
     }
   }, [currentIndex, products, onProductChange, isTransitioning]);
 
+  // iOS Safari theme-color: серый #7c7c7b пока открыта карточка товара
+  useEffect(() => {
+    if (!isOpen) return;
+    const meta =
+      document.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ??
+      (() => {
+        const m = document.createElement("meta");
+        m.name = "theme-color";
+        document.head.appendChild(m);
+        return m;
+      })();
+    const prev = meta.getAttribute("content");
+    meta.setAttribute("content", "#7c7c7b");
+    return () => {
+      if (prev === null) meta.remove();
+      else meta.setAttribute("content", prev);
+    };
+  }, [isOpen]);
+
   // Animation handling
   useEffect(() => {
     if (isOpen) {
