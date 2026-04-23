@@ -17,18 +17,16 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
-      // Small delay to trigger animation
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      });
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsAnimating(true);
+      }, 10);
+      return () => clearTimeout(timer);
     } else {
       setIsAnimating(false);
-      // Wait for animation to complete before hiding
       const timer = setTimeout(() => {
         setIsVisible(false);
-      }, 400);
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -80,15 +78,17 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
           height: "env(safe-area-inset-top, 0px)",
           backgroundColor: "#7c7c7b",
           opacity: isAnimating ? 1 : 0,
-          transition: "opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
+          transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           zIndex: 1,
         }}
       />
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black transition-opacity duration-[400ms] ${
-          isAnimating ? "opacity-50" : "opacity-0"
-        }`}
+        className="absolute inset-0 bg-black"
+        style={{
+          opacity: isAnimating ? 0.5 : 0,
+          transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
         onClick={onClose}
       />
 
@@ -99,7 +99,7 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
         }`}
         style={{
           top: fullHeight ? "max(44px, env(safe-area-inset-top, 44px))" : undefined,
-          transition: "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+          transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
         {/* Handle */}
