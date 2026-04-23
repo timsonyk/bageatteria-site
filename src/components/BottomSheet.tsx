@@ -18,10 +18,12 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
     if (isOpen) {
       setIsVisible(true);
       setIsAnimating(false);
-      const timer = setTimeout(() => {
-        setIsAnimating(true);
-      }, 10);
-      return () => clearTimeout(timer);
+      const raf1 = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+      return () => cancelAnimationFrame(raf1);
     } else {
       setIsAnimating(false);
       const timer = setTimeout(() => {
@@ -94,11 +96,10 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
 
       {/* Sheet */}
       <div
-        className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] ${fullHeight ? "" : "max-h-[80vh]"} overflow-hidden transform flex flex-col ${
-          isAnimating ? "translate-y-0" : "translate-y-full"
-        }`}
+        className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] ${fullHeight ? "" : "max-h-[80vh]"} overflow-hidden flex flex-col`}
         style={{
           top: fullHeight ? "max(44px, env(safe-area-inset-top, 44px))" : undefined,
+          transform: isAnimating ? "translateY(0)" : "translateY(100%)",
           transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
