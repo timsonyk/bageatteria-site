@@ -724,7 +724,7 @@ export function ProductModal({
         <div
           className="absolute left-0 right-0 flex justify-center z-20 pointer-events-none"
           style={{
-            top: isAnimating ? "12px" : "100%",
+            top: isAnimating ? "calc(12px + env(safe-area-inset-top, 0px))" : "100%",
             opacity: isAnimating ? 1 : 0,
             transition: "top 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           }}
@@ -797,7 +797,7 @@ export function ProductModal({
       <div
         className="absolute inset-x-0 bottom-0 bg-white rounded-t-[20px] overflow-hidden transform"
         style={{
-          top: "44px",
+          top: "max(44px, env(safe-area-inset-top, 44px))",
           transform: isAnimating
             ? `translateY(${verticalOffset}px)`
             : "translateY(100%)",

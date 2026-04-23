@@ -6,7 +6,10 @@ interface HeaderProps {
 
 export function Header({ rightElement }: HeaderProps) {
   return (
-    <header className="bg-background">
+    <header
+      className="bg-background"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
       <div className="flex items-center justify-between h-14 px-4">
         <Image
           src="/logo.svg"
