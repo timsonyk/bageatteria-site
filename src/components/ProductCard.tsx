@@ -81,12 +81,6 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
           )}
         </p>
 
-        {/* Калории */}
-        {product.calories && (
-          <p className="text-[13px] text-[#8E8E93] leading-snug mt-0.5">
-            {product.calories} ккал
-          </p>
-        )}
       </div>
     </div>
   );
