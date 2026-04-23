@@ -64,8 +64,11 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
 
       {/* Контент под изображением */}
       <div className="flex flex-col mt-2 pl-1.5">
-        {/* Название */}
-        <h3 className="text-[16px] font-medium text-black leading-none -ml-px">
+        {/* Название — всегда резервируем 2 строки, чтобы цена висела на одной линии */}
+        <h3
+          className="text-[16px] font-medium text-black -ml-px line-clamp-2"
+          style={{ lineHeight: 1.15, minHeight: "2.3em" }}
+        >
           {product.name}
         </h3>
 

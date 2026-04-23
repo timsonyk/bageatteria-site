@@ -6,6 +6,7 @@ import { Heart, Minus, Plus } from "lucide-react";
 import { Product, Category, ModificationGroup, ModificationOption } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
+import { ExpandableText } from "./ExpandableText";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -253,9 +254,11 @@ function ProductCard({
         {product.description && (
           <div className="mt-3">
             <h3 className="text-[14px] font-semibold text-black mb-1">Описание</h3>
-            <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line break-words overflow-hidden">
-              {product.description}
-            </p>
+            <ExpandableText
+              text={product.description}
+              className="text-[15px] text-gray-600 leading-relaxed"
+              lines={2}
+            />
           </div>
         )}
 
@@ -263,9 +266,11 @@ function ProductCard({
         {product.ingredients && (
           <div className="mt-3">
             <h3 className="text-[14px] font-semibold text-black mb-1">Состав</h3>
-            <p className="text-[14px] text-gray-600 leading-relaxed whitespace-pre-line">
-              {product.ingredients}
-            </p>
+            <ExpandableText
+              text={product.ingredients}
+              className="text-[14px] text-gray-600 leading-relaxed"
+              lines={2}
+            />
           </div>
         )}
 

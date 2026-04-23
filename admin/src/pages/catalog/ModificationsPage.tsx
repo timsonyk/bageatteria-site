@@ -303,10 +303,22 @@ export const ModificationsPage = () => {
                   <Switch />
                 </Form.Item>
               </Space>
-              <div style={{ marginBottom: 4, fontSize: 12, color: '#888' }}>
-                КБЖУ опции. Заполните ОДИН из двух столбцов для каждой строки:
-                проценты — когда замена (другое молоко, −50% сахара), абсолют —
-                когда добавление (+1 яйцо = +55 ккал). Если заданы оба — применяются проценты.
+              <div style={{ marginBottom: 4, fontSize: 12, color: '#666', background: '#FAFAFA', padding: '8px 10px', borderRadius: 4 }}>
+                <div style={{ fontWeight: 500, marginBottom: 4 }}>Как это работает</div>
+                <div style={{ marginBottom: 2 }}>
+                  • <b>Проценты</b> — замена части состава:{' '}
+                  <code>итог = база × (1 + pct/100)</code>.
+                  Пример: Латте 202 ккал с банановым молоком (−30%) → 202×0.7 = 141 ккал.
+                </div>
+                <div style={{ marginBottom: 2 }}>
+                  • <b>Абсолют</b> — добавление фиксированного количества:{' '}
+                  <code>итог = база + значение</code>.
+                  Пример: +1 яйцо = +55 ккал, независимо от размера блюда.
+                </div>
+                <div>
+                  Заполните <b>ОДИН</b> столбец на строку (для каждого поля
+                  отдельно). Если оба заданы — применяется процент.
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '90px 120px 120px', gap: '8px 16px', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 12, color: '#888', gridColumn: 2 }}>Абсолют</div>
