@@ -76,11 +76,16 @@ export interface ModificationOption {
   is_default: boolean;
   sort_order: number;
   is_active: boolean;
-  // Дельта-КБЖУ при выборе этой опции (прибавляется к базе)
+  // Абсолютная дельта (legacy)
   calories?: number | null;
   proteins?: number | null;
   fats?: number | null;
   carbs?: number | null;
+  // Процентная дельта: итог = base × (1 + pct/100)
+  calories_pct?: number | null;
+  proteins_pct?: number | null;
+  fats_pct?: number | null;
+  carbs_pct?: number | null;
 }
 
 // Группа модификаций

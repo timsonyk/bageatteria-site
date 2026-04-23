@@ -303,6 +303,23 @@ export const ModificationsPage = () => {
                   <Switch />
                 </Form.Item>
               </Space>
+              <div style={{ marginBottom: 8, fontSize: 12, color: '#888' }}>
+                Процентные изменения КБЖУ (итог = база × (1 + pct/100)). 0 = без изменения.
+              </div>
+              <Space style={{ width: '100%' }} align="start">
+                <Form.Item name="calories_pct" label="Δ ккал, %" style={{ marginBottom: 8, width: 110 }}>
+                  <InputNumber style={{ width: '100%' }} step={1} />
+                </Form.Item>
+                <Form.Item name="proteins_pct" label="Δ белки, %" style={{ marginBottom: 8, width: 110 }}>
+                  <InputNumber style={{ width: '100%' }} step={1} />
+                </Form.Item>
+                <Form.Item name="fats_pct" label="Δ жиры, %" style={{ marginBottom: 8, width: 110 }}>
+                  <InputNumber style={{ width: '100%' }} step={1} />
+                </Form.Item>
+                <Form.Item name="carbs_pct" label="Δ углеводы, %" style={{ marginBottom: 8, width: 110 }}>
+                  <InputNumber style={{ width: '100%' }} step={1} />
+                </Form.Item>
+              </Space>
               <Form.Item label="Изображение" style={{ marginBottom: 8 }}>
                 <Upload
                   name="file"

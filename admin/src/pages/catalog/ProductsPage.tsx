@@ -487,6 +487,7 @@ export const ProductsPage = () => {
     { title: 'Название', dataIndex: 'name' },
     { title: 'Объём', dataIndex: 'volume', render: (v: string) => v || '—' },
     { title: 'Цена', dataIndex: 'base_price', render: (v: number) => `${v} ₽` },
+    { title: 'Ккал', dataIndex: 'calories', render: (v: number | null) => v ?? '—', width: 70 },
     { title: 'Сорт.', dataIndex: 'sort_order', width: 60 },
     {
       title: 'Действия',
@@ -752,6 +753,20 @@ export const ProductsPage = () => {
             </Form.Item>
             <Form.Item name="sort_order" label="Сортировка" initialValue={0} style={{ width: 100 }}>
               <InputNumber style={{ width: '100%' }} />
+            </Form.Item>
+          </Space>
+          <Space style={{ width: '100%' }} align="start">
+            <Form.Item name="calories" label="Ккал" style={{ width: 100 }}>
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="proteins" label="Белки (г)" style={{ width: 100 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
+            </Form.Item>
+            <Form.Item name="fats" label="Жиры (г)" style={{ width: 100 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
+            </Form.Item>
+            <Form.Item name="carbs" label="Углеводы (г)" style={{ width: 110 }}>
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
             </Form.Item>
           </Space>
           <Space>

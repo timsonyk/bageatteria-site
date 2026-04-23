@@ -101,22 +101,39 @@ function ProductCard({
     : parseFloat(product.base_price);
   const price = basePrice + modsExtra;
 
-  // Динамический КБЖУ: база из выбранного размера (иначе Product) + дельты модификаций
+  // Динамический КБЖУ: база из выбранного размера (иначе Product) + модификации.
+  // Модификации применяются так: сначала процентные дельты (итог = base×(1+pct/100)),
+  // затем абсолютные (для совместимости). Если обе — применяется процент.
   const dynamicKbju = useMemo(() => {
     const currentSize = hasSizes ? sortedSizes[selectedSizeIndex] : null;
-    const pickField = (sizeVal: number | null | undefined, prodVal: number | null | undefined) =>
-      sizeVal != null ? sizeVal : prodVal;
-    let kcal = pickField(currentSize?.calories, product.calories);
-    let prot = pickField(currentSize?.proteins, product.proteins);
-    let fat = pickField(currentSize?.fats, product.fats);
-    let carb = pickField(currentSize?.carbs, product.carbs);
-    modGroups.forEach(g => g.options.forEach(o => {
-      if (!selectedOptions.has(o.id)) return;
-      if (kcal != null && o.calories != null) kcal += o.calories;
-      if (prot != null && o.proteins != null) prot += o.proteins;
-      if (fat != null && o.fats != null) fat += o.fats;
-      if (carb != null && o.carbs != null) carb += o.carbs;
-    }));
+    const pick = (s: number | null | undefined, p: number | null | undefined) =>
+      s != null ? s : p;
+    let kcal = pick(currentSize?.calories, product.calories);
+    let prot = pick(currentSize?.proteins, product.proteins);
+    let fat = pick(currentSize?.fats, product.fats);
+    let carb = pick(currentSize?.carbs, product.carbs);
+
+    const applyPctOrAbs = (
+      baseVal: number | null | undefined,
+      pct: number | null | undefined,
+      abs: number | null | undefined,
+    ): number | null | undefined => {
+      if (baseVal == null) return baseVal;
+      if (pct != null) return baseVal * (1 + pct / 100);
+      if (abs != null) return baseVal + abs;
+      return baseVal;
+    };
+
+    modGroups.forEach((g) =>
+      g.options.forEach((o) => {
+        if (!selectedOptions.has(o.id)) return;
+        kcal = applyPctOrAbs(kcal, o.calories_pct, o.calories);
+        prot = applyPctOrAbs(prot, o.proteins_pct, o.proteins);
+        fat = applyPctOrAbs(fat, o.fats_pct, o.fats);
+        carb = applyPctOrAbs(carb, o.carbs_pct, o.carbs);
+      })
+    );
+
     const clamp1 = (v: number | null | undefined) =>
       v == null ? null : Math.round(Math.max(0, v) * 10) / 10;
     return {

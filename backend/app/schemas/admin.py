@@ -84,6 +84,10 @@ class ProductSizeCreate(BaseModel):
     volume: Optional[str] = None
     base_price: float
     sort_order: int = 0
+    calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
 
 
 class ProductSizeUpdate(BaseModel):
@@ -91,6 +95,10 @@ class ProductSizeUpdate(BaseModel):
     volume: Optional[str] = None
     base_price: Optional[float] = None
     sort_order: Optional[int] = None
+    calories: Optional[int] = None
+    proteins: Optional[float] = None
+    fats: Optional[float] = None
+    carbs: Optional[float] = None
 
 
 class ModificationGroupCreate(BaseModel):
@@ -121,6 +129,10 @@ class ModificationOptionCreate(BaseModel):
     is_default: bool = False
     sort_order: int = 0
     is_active: bool = True
+    calories_pct: Optional[float] = None
+    proteins_pct: Optional[float] = None
+    fats_pct: Optional[float] = None
+    carbs_pct: Optional[float] = None
 
 
 class ModificationOptionUpdate(BaseModel):
@@ -130,6 +142,10 @@ class ModificationOptionUpdate(BaseModel):
     is_default: Optional[bool] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
+    calories_pct: Optional[float] = None
+    proteins_pct: Optional[float] = None
+    fats_pct: Optional[float] = None
+    carbs_pct: Optional[float] = None
 
 
 class BannerCreate(BaseModel):

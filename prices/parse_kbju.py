@@ -1,6 +1,7 @@
 """Парсит KBJU xlsx → 2 CSV:
  base.csv:  base_norm, size_ml, kcal, prot, fat, carb
- milks.csv: milk_kind, kcal, prot, fat, carb  (deltas, уже агрегированные)
+ milks.csv: base_norm, kind, kcal_pct, prot_pct, fat_pct, carb_pct
+     pct — процентная дельта: итог = base × (1 + pct/100).
 """
 import csv
 import re
@@ -49,8 +50,10 @@ MILK_KIND_MAP = {
 def main():
     df = pd.read_excel(SRC, sheet_name=SHEET, header=None)
     base_rows = []
-    milk_by_base: dict[str, list[dict]] = {}
+    # milk-subvariants привязаны к конкретной main-строке: храним как (base_norm, size_ml, kind)
+    milks_by_base_size: dict[tuple[str, int | None], dict[str, dict]] = {}
     current_base = None
+    current_size = None
 
     for i in range(5, len(df)):
         name = df.iloc[i, 0]
@@ -65,10 +68,13 @@ def main():
             kind = MILK_KIND_MAP.get(raw.casefold())
             if not kind or current_base is None:
                 continue
-            milk_by_base.setdefault(current_base, []).append({
-                "kind": kind, "kcal": int(round(kcal)),
-                "prot": float(prot or 0), "fat": float(fat or 0), "carb": float(carb or 0),
-            })
+            key = (current_base, current_size)
+            milks_by_base_size.setdefault(key, {})[kind] = {
+                "kcal": int(round(kcal)),
+                "prot": float(prot or 0),
+                "fat": float(fat or 0),
+                "carb": float(carb or 0),
+            }
             continue
 
         m = re.match(r"^(.+?)\s+(\d+)\s*(мл|г|гр)\.?\s*$", name, flags=re.IGNORECASE)
@@ -80,6 +86,7 @@ def main():
             size_ml = None
         base_norm = NAME_MAP_NORM.get(norm_name(base), norm_name(base))
         current_base = base_norm
+        current_size = size_ml
 
         base_rows.append({
             "base_norm": base_norm, "size_ml": size_ml,
@@ -89,72 +96,70 @@ def main():
             "carb": round(float(carb or 0), 2),
         })
 
-    # save base
     with (HERE/"kbju_base.csv").open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["base_norm","size_ml","kcal","prot","fat","carb"])
         w.writeheader()
         for r in base_rows: w.writerow(r)
 
-    # milk deltas PER product. Для multi-size напитков файл даёт субварианты
-    # для КАЖДОГО размера: значения молока масштабируются с размером.
-    # Чтобы дельта корректно работала на любом размере, храним её в АБСОЛЮТНЫХ
-    # значениях, рассчитанных по СРЕДНЕМУ ОТНОШЕНИЮ (milk/main) через размеры.
-    # Дельта = base * (avg_ratio − 1). Так при base=9.81 (S) и ratio=0.184 получим
-    # итог 1.81 (правильно), а при base=12.6 (M) — 2.32 (тоже правильно).
-    # На уровне хранения кладём дельту для main (макс. размер) — frontend
-    # не умеет масштабировать. Это компромисс.
-    per_product: list[dict] = []
-    for base_norm, milks in milk_by_base.items():
-        mains = [r for r in base_rows if r["base_norm"] == base_norm]
-        if not mains: continue
-        main = max(mains, key=lambda r: (r["size_ml"] or 0))
-        # соберём subvariants по kind. Они идут в порядке, привязанном
-        # к main-строкам (по размеру). Для avg-ratio используем min ratio (≈
-        # консервативная оценка «насколько сильно падает от замены»).
-        by_kind: dict[str, list] = {}
-        for m in milks:
-            by_kind.setdefault(m["kind"], []).append(m)
+    # milks → percent дельты per (base, kind), averaged across всех размеров одного продукта
+    # main-строка по размеру — lookup из base_rows
+    main_lookup: dict[tuple[str, int | None], dict] = {}
+    for r in base_rows:
+        main_lookup[(r["base_norm"], r["size_ml"])] = r
 
-        def avg_ratio(field: str, mgroup: list) -> float:
-            # для каждого milk-row берём ратио к main-y соответствующего размера
-            # если в mgroup несколько — усредним
-            ratios = []
-            for m in mgroup:
-                base_v = main[field] or 0
-                if base_v == 0:
-                    continue
-                ratios.append(m[field] / base_v)
-            return sum(ratios) / len(ratios) if ratios else 1.0
+    # milks_by_base_size: {(base, size): {kind: milk_row}}
+    # Собираем все ratio'ы по (base, kind)
+    ratios: dict[tuple[str, str], list[tuple[float, float, float, float]]] = {}
+    for (base_norm, size_ml), kmap in milks_by_base_size.items():
+        main = main_lookup.get((base_norm, size_ml))
+        if not main:
+            continue
+        for kind, milk in kmap.items():
+            def ratio(field):
+                b = main[field]
+                return (milk[field] / b) if b else 1.0
+            ratios.setdefault((base_norm, kind), []).append(
+                (ratio("kcal"), ratio("prot"), ratio("fat"), ratio("carb"))
+            )
 
-        for kind, mgroup in by_kind.items():
-            r_kcal = avg_ratio("kcal", mgroup)
-            r_prot = avg_ratio("prot", mgroup)
-            r_fat = avg_ratio("fat", mgroup)
-            r_carb = avg_ratio("carb", mgroup)
-            # дельта = base * (ratio - 1) — применяется к тому же main.
-            # Для ЛЮБОГО размера нашей БД храним это абсолютное число.
-            per_product.append({
-                "base_norm": base_norm,
-                "kind": kind,
-                "kcal": int(round(main["kcal"] * (r_kcal - 1))),
-                "prot": round(main["prot"] * (r_prot - 1), 2),
-                "fat": round(main["fat"] * (r_fat - 1), 2),
-                "carb": round(main["carb"] * (r_carb - 1), 2),
-            })
+    milk_rows = []
+    for (base_norm, kind), pts in ratios.items():
+        n = len(pts)
+        avg = (
+            sum(p[0] for p in pts) / n,
+            sum(p[1] for p in pts) / n,
+            sum(p[2] for p in pts) / n,
+            sum(p[3] for p in pts) / n,
+        )
+        milk_rows.append({
+            "base_norm": base_norm, "kind": kind,
+            "kcal_pct": round((avg[0] - 1) * 100, 1),
+            "prot_pct": round((avg[1] - 1) * 100, 1),
+            "fat_pct": round((avg[2] - 1) * 100, 1),
+            "carb_pct": round((avg[3] - 1) * 100, 1),
+        })
 
     with (HERE/"kbju_milks.csv").open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["base_norm","kind","kcal","prot","fat","carb"])
+        w = csv.DictWriter(f, fieldnames=["base_norm","kind","kcal_pct","prot_pct","fat_pct","carb_pct"])
         w.writeheader()
-        for r in per_product: w.writerow(r)
+        for r in milk_rows: w.writerow(r)
 
-    # список продуктов, к которым крепим группу «Тип молока»
+    # уникальные товары с молоком
     with (HERE/"kbju_milk_products.csv").open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f); w.writerow(["base_norm"])
-        for k in milk_by_base.keys(): w.writerow([k])
+        seen = set()
+        for (base, _), _ in milks_by_base_size.items():
+            if base not in seen:
+                w.writerow([base]); seen.add(base)
 
-    print(f"Спарсено: base={len(base_rows)}, per-product deltas={len(per_product)}, products={len(milk_by_base)}")
-    for r in per_product[:20]:
-        print(f"  {r['base_norm']:30s} {r['kind']:12s} Δkcal={r['kcal']:+d} Δb={r['prot']:+.2f}")
+    print(f"base={len(base_rows)}, milk pct rows={len(milk_rows)}, products c молоком={len(seen)}")
+    # предпросмотр для 3 продуктов
+    for target in ["капучино", "латте", "айс матча латте зеленый"]:
+        entries = [r for r in milk_rows if r["base_norm"] == target]
+        if not entries: continue
+        print(f"  {target}:")
+        for r in entries:
+            print(f"    {r['kind']:12s} ΔKкал={r['kcal_pct']:+.1f}%  Δб={r['prot_pct']:+.1f}%  Δж={r['fat_pct']:+.1f}%  Δу={r['carb_pct']:+.1f}%")
 
 
 if __name__ == "__main__":

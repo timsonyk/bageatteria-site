@@ -122,11 +122,17 @@ class ModificationOption(Base):
     is_default = Column(Boolean, default=False, nullable=False)
     sort_order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    # Дельта-КБЖУ при выборе опции (на порцию; добавляется к базе)
+    # Абсолютная дельта КБЖУ на порцию (legacy). Предпочтительно — _pct.
     calories = Column(Integer, nullable=True)
     proteins = Column(Float, nullable=True)
     fats = Column(Float, nullable=True)
     carbs = Column(Float, nullable=True)
+    # Процентное изменение КБЖУ: итог = base × (1 + pct/100).
+    # Пример: -82.5 означает «−82.5% от базы». 0 = нет изменения.
+    calories_pct = Column(Float, nullable=True)
+    proteins_pct = Column(Float, nullable=True)
+    fats_pct = Column(Float, nullable=True)
+    carbs_pct = Column(Float, nullable=True)
 
     group = relationship("ModificationGroup", back_populates="options")
 
