@@ -117,12 +117,13 @@ function ProductCard({
       if (fat != null && o.fats != null) fat += o.fats;
       if (carb != null && o.carbs != null) carb += o.carbs;
     }));
-    const round1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
+    const clamp1 = (v: number | null | undefined) =>
+      v == null ? null : Math.round(Math.max(0, v) * 10) / 10;
     return {
       calories: kcal != null ? Math.max(0, Math.round(kcal)) : null,
-      proteins: round1(prot),
-      fats: round1(fat),
-      carbs: round1(carb),
+      proteins: clamp1(prot),
+      fats: clamp1(fat),
+      carbs: clamp1(carb),
     };
   }, [hasSizes, sortedSizes, selectedSizeIndex, product.calories, product.proteins, product.fats, product.carbs, modGroups, selectedOptions]);
 

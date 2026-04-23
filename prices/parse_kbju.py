@@ -95,31 +95,51 @@ def main():
         w.writeheader()
         for r in base_rows: w.writerow(r)
 
-    # milk deltas PER product (не усреднённо; файл может давать разные milk
-    # значения для разных сабвариантов одного продукта — усредним по размеру
-    # внутри одного продукта)
+    # milk deltas PER product. Для multi-size напитков файл даёт субварианты
+    # для КАЖДОГО размера: значения молока масштабируются с размером.
+    # Чтобы дельта корректно работала на любом размере, храним её в АБСОЛЮТНЫХ
+    # значениях, рассчитанных по СРЕДНЕМУ ОТНОШЕНИЮ (milk/main) через размеры.
+    # Дельта = base * (avg_ratio − 1). Так при base=9.81 (S) и ratio=0.184 получим
+    # итог 1.81 (правильно), а при base=12.6 (M) — 2.32 (тоже правильно).
+    # На уровне хранения кладём дельту для main (макс. размер) — frontend
+    # не умеет масштабировать. Это компромисс.
     per_product: list[dict] = []
     for base_norm, milks in milk_by_base.items():
         mains = [r for r in base_rows if r["base_norm"] == base_norm]
         if not mains: continue
         main = max(mains, key=lambda r: (r["size_ml"] or 0))
+        # соберём subvariants по kind. Они идут в порядке, привязанном
+        # к main-строкам (по размеру). Для avg-ratio используем min ratio (≈
+        # консервативная оценка «насколько сильно падает от замены»).
         by_kind: dict[str, list] = {}
         for m in milks:
             by_kind.setdefault(m["kind"], []).append(m)
+
+        def avg_ratio(field: str, mgroup: list) -> float:
+            # для каждого milk-row берём ратио к main-y соответствующего размера
+            # если в mgroup несколько — усредним
+            ratios = []
+            for m in mgroup:
+                base_v = main[field] or 0
+                if base_v == 0:
+                    continue
+                ratios.append(m[field] / base_v)
+            return sum(ratios) / len(ratios) if ratios else 1.0
+
         for kind, mgroup in by_kind.items():
-            # усредним, если в файле несколько (для разных размеров одного напитка)
-            n = len(mgroup)
-            avg_kcal = sum(m["kcal"] for m in mgroup) / n
-            avg_prot = sum(m["prot"] for m in mgroup) / n
-            avg_fat = sum(m["fat"] for m in mgroup) / n
-            avg_carb = sum(m["carb"] for m in mgroup) / n
+            r_kcal = avg_ratio("kcal", mgroup)
+            r_prot = avg_ratio("prot", mgroup)
+            r_fat = avg_ratio("fat", mgroup)
+            r_carb = avg_ratio("carb", mgroup)
+            # дельта = base * (ratio - 1) — применяется к тому же main.
+            # Для ЛЮБОГО размера нашей БД храним это абсолютное число.
             per_product.append({
                 "base_norm": base_norm,
                 "kind": kind,
-                "kcal": int(round(avg_kcal - main["kcal"])),
-                "prot": round(avg_prot - main["prot"], 2),
-                "fat": round(avg_fat - main["fat"], 2),
-                "carb": round(avg_carb - main["carb"], 2),
+                "kcal": int(round(main["kcal"] * (r_kcal - 1))),
+                "prot": round(main["prot"] * (r_prot - 1), 2),
+                "fat": round(main["fat"] * (r_fat - 1), 2),
+                "carb": round(main["carb"] * (r_carb - 1), 2),
             })
 
     with (HERE/"kbju_milks.csv").open("w", encoding="utf-8", newline="") as f:
