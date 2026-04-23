@@ -285,24 +285,26 @@ export default function MenuPage() {
         recommendedProducts={products.filter((p) => p.is_active && p.is_recommended_favorites)}
       />
 
-      {/* Sticky bottom bar */}
-      {totalQty > 0 && (
-        <div
-          className="fixed bottom-0 left-0 right-0 px-4 pt-3 z-30 pointer-events-none"
-          style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+      {/* Sticky bottom bar — выезжает снизу при появлении избранного */}
+      <div
+        className="fixed bottom-0 left-0 right-0 px-4 pt-3 z-30 pointer-events-none"
+        style={{
+          paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+          transform: totalQty > 0 ? "translateY(0)" : "translateY(120%)",
+          transition: "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setIsFavoritesSheetOpen(true)}
+          className="w-full h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform pointer-events-auto"
         >
-          <button
-            type="button"
-            onClick={() => setIsFavoritesSheetOpen(true)}
-            className="w-full h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform pointer-events-auto"
-          >
-            <span className="text-[17px] font-semibold text-black">
-              Избранное · {totalQty} {pluralizeTovar(totalQty)}
-            </span>
-            <Heart className="w-6 h-6 text-black" strokeWidth={1.75} />
-          </button>
-        </div>
-      )}
+          <span className="text-[17px] font-semibold text-black">
+            Избранное · {totalQty} {pluralizeTovar(totalQty)}
+          </span>
+          <Heart className="w-6 h-6 text-black" strokeWidth={1.75} />
+        </button>
+      </div>
     </div>
   );
 }

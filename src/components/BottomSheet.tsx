@@ -28,7 +28,7 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
       // Wait for animation to complete before hiding
       const timer = setTimeout(() => {
         setIsVisible(false);
-      }, 300);
+      }, 400);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -56,7 +56,7 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-black transition-opacity duration-[400ms] ${
           isAnimating ? "opacity-50" : "opacity-0"
         }`}
         onClick={onClose}
@@ -64,9 +64,10 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
 
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] ${fullHeight ? "h-[90vh]" : "max-h-[80vh]"} overflow-hidden transform transition-transform duration-300 ease-out flex flex-col ${
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] ${fullHeight ? "h-[90vh]" : "max-h-[80vh]"} overflow-hidden transform flex flex-col ${
           isAnimating ? "translate-y-0" : "translate-y-full"
         }`}
+        style={{ transition: "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)" }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
