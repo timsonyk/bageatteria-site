@@ -400,7 +400,7 @@ function ProductCard({
       </div>
       {/* Sticky bottom bar */}
       <div
-        className="sticky bottom-0 px-4 pt-3"
+        className="sticky bottom-0 bg-white px-4 pt-3"
         style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="flex items-center">
