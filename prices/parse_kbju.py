@@ -95,45 +95,46 @@ def main():
         w.writeheader()
         for r in base_rows: w.writerow(r)
 
-    # milk deltas
-    deltas_by_kind: dict[str, list] = {}
+    # milk deltas PER product (не усреднённо; файл может давать разные milk
+    # значения для разных сабвариантов одного продукта — усредним по размеру
+    # внутри одного продукта)
+    per_product: list[dict] = []
     for base_norm, milks in milk_by_base.items():
         mains = [r for r in base_rows if r["base_norm"] == base_norm]
         if not mains: continue
         main = max(mains, key=lambda r: (r["size_ml"] or 0))
+        by_kind: dict[str, list] = {}
         for m in milks:
-            deltas_by_kind.setdefault(m["kind"], []).append((
-                m["kcal"] - main["kcal"],
-                m["prot"] - main["prot"],
-                m["fat"] - main["fat"],
-                m["carb"] - main["carb"],
-            ))
-
-    milk_rows = []
-    for kind, ds in deltas_by_kind.items():
-        n = len(ds)
-        milk_rows.append({
-            "kind": kind,
-            "kcal": int(round(sum(d[0] for d in ds) / n)),
-            "prot": round(sum(d[1] for d in ds) / n, 2),
-            "fat": round(sum(d[2] for d in ds) / n, 2),
-            "carb": round(sum(d[3] for d in ds) / n, 2),
-        })
+            by_kind.setdefault(m["kind"], []).append(m)
+        for kind, mgroup in by_kind.items():
+            # усредним, если в файле несколько (для разных размеров одного напитка)
+            n = len(mgroup)
+            avg_kcal = sum(m["kcal"] for m in mgroup) / n
+            avg_prot = sum(m["prot"] for m in mgroup) / n
+            avg_fat = sum(m["fat"] for m in mgroup) / n
+            avg_carb = sum(m["carb"] for m in mgroup) / n
+            per_product.append({
+                "base_norm": base_norm,
+                "kind": kind,
+                "kcal": int(round(avg_kcal - main["kcal"])),
+                "prot": round(avg_prot - main["prot"], 2),
+                "fat": round(avg_fat - main["fat"], 2),
+                "carb": round(avg_carb - main["carb"], 2),
+            })
 
     with (HERE/"kbju_milks.csv").open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["kind","kcal","prot","fat","carb"])
+        w = csv.DictWriter(f, fieldnames=["base_norm","kind","kcal","prot","fat","carb"])
         w.writeheader()
-        for r in milk_rows: w.writerow(r)
+        for r in per_product: w.writerow(r)
 
     # список продуктов, к которым крепим группу «Тип молока»
     with (HERE/"kbju_milk_products.csv").open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f); w.writerow(["base_norm"])
         for k in milk_by_base.keys(): w.writerow([k])
 
-    print(f"Спарсено: base={len(base_rows)}, milk-kinds={len(milk_rows)}, milk-products={len(milk_by_base)}")
-    print("Дельты (avg):")
-    for r in milk_rows:
-        print(f"  {r['kind']:12s} Δkcal={r['kcal']:+d} Δбелки={r['prot']:+.2f} Δжиры={r['fat']:+.2f} Δугл={r['carb']:+.2f}")
+    print(f"Спарсено: base={len(base_rows)}, per-product deltas={len(per_product)}, products={len(milk_by_base)}")
+    for r in per_product[:20]:
+        print(f"  {r['base_norm']:30s} {r['kind']:12s} Δkcal={r['kcal']:+d} Δb={r['prot']:+.2f}")
 
 
 if __name__ == "__main__":
