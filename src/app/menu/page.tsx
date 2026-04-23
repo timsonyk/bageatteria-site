@@ -285,11 +285,15 @@ export default function MenuPage() {
         recommendedProducts={products.filter((p) => p.is_active && p.is_recommended_favorites)}
       />
 
-      {/* Sticky bottom bar — плавное появление через opacity */}
+      {/* Sticky bottom bar — плавное появление через opacity.
+          Градиент body→transparent сверху: в safe-area зоне гарантированно
+          solid-фон вне зависимости от поведения Safari chrome. */}
       <div
-        className="fixed bottom-0 left-0 right-0 px-4 pt-3 z-30"
+        className="fixed bottom-0 left-0 right-0 px-4 pt-8 z-30"
         style={{
           paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+          background:
+            "linear-gradient(to top, var(--background) 45%, color-mix(in srgb, var(--background) 80%, transparent) 70%, transparent 100%)",
           opacity: totalQty > 0 ? 1 : 0,
           pointerEvents: totalQty > 0 ? "auto" : "none",
           transition: "opacity 250ms ease-out",
