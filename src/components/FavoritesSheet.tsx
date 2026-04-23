@@ -71,7 +71,10 @@ export function FavoritesSheet({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
           {rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 text-center py-16">
               <div className="w-16 h-16 rounded-full bg-[#F2F2F7] flex items-center justify-center mb-4">

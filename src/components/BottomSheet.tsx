@@ -84,17 +84,6 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
           zIndex: 1,
         }}
       />
-      {/* Safe-area bottom fill — белая плашка под home indicator */}
-      <div
-        className="absolute inset-x-0 bottom-0 pointer-events-none"
-        style={{
-          height: "env(safe-area-inset-bottom, 0px)",
-          backgroundColor: "#FFFFFF",
-          opacity: isAnimating ? 1 : 0,
-          transition: "opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
-          zIndex: 2,
-        }}
-      />
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black transition-opacity duration-[400ms] ${
@@ -105,10 +94,13 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
 
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] ${fullHeight ? "h-[90vh]" : "max-h-[80vh]"} overflow-hidden transform flex flex-col ${
+        className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] ${fullHeight ? "" : "max-h-[80vh]"} overflow-hidden transform flex flex-col ${
           isAnimating ? "translate-y-0" : "translate-y-full"
         }`}
-        style={{ transition: "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)" }}
+        style={{
+          top: fullHeight ? "max(44px, env(safe-area-inset-top, 44px))" : undefined,
+          transition: "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
