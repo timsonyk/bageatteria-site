@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { StoreLocation } from "@/lib/types";
 import { BottomSheet } from "./BottomSheet";
 import { getStoreLocations } from "@/lib/api";
-
-const STORAGE_KEY = "selected_store_location";
+import { loadSelectedLocationId, saveSelectedLocationId } from "@/lib/location-storage";
 
 interface LocationSelectorProps {
   // For /menu (without slug) - legacy mode
@@ -47,9 +46,9 @@ export function LocationSelector({
         if (isUrlMode) return;
 
         // Check for saved location (legacy mode)
-        const savedId = localStorage.getItem(STORAGE_KEY);
-        if (savedId) {
-          const saved = data.find((l) => l.id === parseInt(savedId));
+        const savedId = loadSelectedLocationId();
+        if (savedId !== null) {
+          const saved = data.find((l) => l.id === savedId);
           if (saved) {
             setSelectedLocation(saved);
             onLocationChange?.(saved.id);
@@ -82,7 +81,7 @@ export function LocationSelector({
 
   const handleSelect = (location: StoreLocation) => {
     setSelectedLocation(location);
-    localStorage.setItem(STORAGE_KEY, String(location.id));
+    saveSelectedLocationId(location.id);
 
     if (isUrlMode) {
       // URL mode - navigate to new slug

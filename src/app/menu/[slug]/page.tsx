@@ -9,8 +9,7 @@ import { ProductModal } from "@/components/ProductModal";
 import { LocationSelector } from "@/components/LocationSelector";
 import { getCategories, getProducts, getStoreLocationBySlug } from "@/lib/api";
 import { Category, Product, StoreLocation } from "@/lib/types";
-
-const STORAGE_KEY = "selected_store_location";
+import { saveSelectedLocationId } from "@/lib/location-storage";
 
 export default function MenuSlugPage() {
   const params = useParams();
@@ -38,8 +37,8 @@ export default function MenuSlugPage() {
           return;
         }
         setCurrentLocation(location);
-        // Сохраняем в localStorage для будущих визитов
-        localStorage.setItem(STORAGE_KEY, String(location.id));
+        // Сохраняем в localStorage для будущих визитов (TTL 12 часов)
+        saveSelectedLocationId(location.id);
       } catch (err) {
         console.error(err);
         router.replace("/menu");
