@@ -18,15 +18,26 @@ export function ProductGrid({ products, categoryUnit, onProductClick }: ProductG
     );
   }
 
+  // Рисуем парами, чтобы items-stretch + flex внутри карточки выравнивали
+  // цены по самой длинной (2-строчной) подписи в ряду.
+  const rows: Product[][] = [];
+  for (let i = 0; i < products.length; i += 2) {
+    rows.push(products.slice(i, i + 2));
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-2.5">
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          categoryUnit={categoryUnit}
-          onClick={() => onProductClick?.(product)}
-        />
+    <div className="flex flex-col gap-y-5">
+      {rows.map((row, idx) => (
+        <div key={idx} className="grid grid-cols-2 gap-2.5 items-stretch">
+          {row.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              categoryUnit={categoryUnit}
+              onClick={() => onProductClick?.(product)}
+            />
+          ))}
+        </div>
       ))}
     </div>
   );

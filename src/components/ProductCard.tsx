@@ -39,7 +39,7 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
   }, [product.weight, categoryUnit, defaultSize]);
 
   return (
-    <div className="flex flex-col cursor-pointer" onClick={onClick}>
+    <div className="flex flex-col cursor-pointer h-full" onClick={onClick}>
       {/* Изображение либо заглушка */}
       <div
         className="relative aspect-square rounded-[20px] active:scale-[0.98] transition-transform"
@@ -62,18 +62,16 @@ export function ProductCard({ product, categoryUnit, onClick }: ProductCardProps
         </div>
       </div>
 
-      {/* Контент под изображением */}
-      <div className="flex flex-col mt-2 pl-1.5">
-        {/* Название — всегда резервируем 2 строки, чтобы цена висела на одной линии */}
-        <h3
-          className="text-[16px] font-medium text-black -ml-px line-clamp-2"
-          style={{ lineHeight: 1.15, minHeight: "2.3em" }}
-        >
+      {/* Контент под изображением — flex-col, цена прибита к низу,
+          чтобы в паре с 2-строчной соседкой цены совпадали по линии */}
+      <div className="flex flex-col mt-2 pl-1.5 flex-1">
+        {/* Название */}
+        <h3 className="text-[16px] font-medium text-black leading-tight -ml-px">
           {product.name}
         </h3>
 
-        {/* Цена · объём / вес */}
-        <p className="text-[14px] leading-snug mt-1">
+        {/* Цена · объём / вес — mt-auto прибивает к низу контент-блока */}
+        <p className="text-[14px] leading-snug mt-auto pt-1">
           <span className="text-black font-normal">{price.toLocaleString("ru-RU")} ₽</span>
           {weightDisplay && (
             <>
