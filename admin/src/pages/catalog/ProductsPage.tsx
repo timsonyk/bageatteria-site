@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
+  Alert,
   Button,
   Drawer,
   Form,
@@ -244,6 +245,15 @@ export const ProductsPage = () => {
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
   const [form] = Form.useForm()
   const selectedCategoryId = Form.useWatch('category_id', form)
+  const watchedWeight = Form.useWatch('weight', form)
+  const watchedCal100 = Form.useWatch('calories_per_100g', form)
+  const watchedProt100 = Form.useWatch('proteins_per_100g', form)
+  const watchedFat100 = Form.useWatch('fats_per_100g', form)
+  const watchedCarb100 = Form.useWatch('carbs_per_100g', form)
+  const watchedCalories = Form.useWatch('calories', form)
+  const watchedProteins = Form.useWatch('proteins', form)
+  const watchedFats = Form.useWatch('fats', form)
+  const watchedCarbs = Form.useWatch('carbs', form)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [fileList, setFileList] = useState<UploadFile[]>([])
@@ -660,6 +670,37 @@ export const ProductsPage = () => {
               <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder="4.2" />
             </Form.Item>
           </Space>
+          {(() => {
+            const hasPer100 = [watchedCal100, watchedProt100, watchedFat100, watchedCarb100].some((v) => v != null && v !== '')
+            const hasPerPortion = [watchedCalories, watchedProteins, watchedFats, watchedCarbs].some((v) => v != null && v !== '')
+            const weightEmpty = watchedWeight == null || watchedWeight === '' || watchedWeight === 0
+            const alerts: React.ReactNode[] = []
+            if (hasPer100 && weightEmpty) {
+              alerts.push(
+                <Alert
+                  key="no-weight"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 8 }}
+                  message="Укажи вес/объём или заполни размеры с объёмом"
+                  description="Без веса (для товаров без размеров) или volume_ml у размера КБЖУ на 100г не умножается на объём и на сайте не отобразится."
+                />
+              )
+            }
+            if (hasPer100 && hasPerPortion) {
+              alerts.push(
+                <Alert
+                  key="conflict"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 8 }}
+                  message="Заполнено и КБЖУ на 100г, и обычное КБЖУ — приоритет у per-100г"
+                  description="Если заполнены оба блока, сайт использует КБЖУ на 100г × объём. Обычное КБЖУ становится запасным и применится только если не хватает объёма/веса. Удали лишнее, чтобы не путаться."
+                />
+              )
+            }
+            return alerts
+          })()}
           <Form.Item name="ingredients" label="Состав">
             <Input.TextArea rows={2} placeholder="Мука, сахар, молоко, яйца..." />
           </Form.Item>

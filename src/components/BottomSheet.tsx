@@ -10,9 +10,22 @@ interface BottomSheetProps {
   fullHeight?: boolean;
 }
 
+function useIsDesktop(): boolean {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isDesktop;
+}
+
 export function BottomSheet({ isOpen, onClose, title, children, fullHeight = false }: BottomSheetProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     if (isOpen) {
@@ -50,9 +63,9 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
     };
   }, [isOpen, onClose]);
 
-  // iOS Safari theme-color: серый #7c7c7b пока шторка открыта
+  // iOS Safari theme-color: серый #7c7c7b пока шторка открыта (только mobile)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isDesktop) return;
     const meta =
       document.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ??
       (() => {
@@ -67,23 +80,25 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
       if (prev === null) meta.remove();
       else meta.setAttribute("content", prev);
     };
-  }, [isOpen]);
+  }, [isOpen, isDesktop]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Safe-area top fill — серая плашка #7c7c7b под статус-баром iOS */}
-      <div
-        className="absolute inset-x-0 top-0 pointer-events-none"
-        style={{
-          height: "env(safe-area-inset-top, 0px)",
-          backgroundColor: "#7c7c7b",
-          opacity: isAnimating ? 1 : 0,
-          transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-          zIndex: 1,
-        }}
-      />
+    <div className={`fixed inset-0 z-50 ${isDesktop ? "flex items-center justify-center" : ""}`}>
+      {/* Safe-area top fill — серая плашка #7c7c7b под статус-баром iOS (только mobile) */}
+      {!isDesktop && (
+        <div
+          className="absolute inset-x-0 top-0 pointer-events-none"
+          style={{
+            height: "env(safe-area-inset-top, 0px)",
+            backgroundColor: "#7c7c7b",
+            opacity: isAnimating ? 1 : 0,
+            transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+            zIndex: 1,
+          }}
+        />
+      )}
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black"
@@ -96,17 +111,31 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
 
       {/* Sheet */}
       <div
-        className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] ${fullHeight ? "" : "max-h-[80vh]"} overflow-hidden flex flex-col`}
-        style={{
-          top: fullHeight ? "max(44px, env(safe-area-inset-top, 44px))" : undefined,
-          transform: isAnimating ? "translateY(0)" : "translateY(100%)",
-          transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-        }}
+        className={
+          isDesktop
+            ? "relative bg-white rounded-[20px] w-[560px] max-w-[calc(100vw-32px)] max-h-[85vh] overflow-hidden flex flex-col"
+            : `absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] ${fullHeight ? "" : "max-h-[80vh]"} overflow-hidden flex flex-col`
+        }
+        style={
+          isDesktop
+            ? {
+                transform: isAnimating ? "none" : "scale(0.96)",
+                opacity: isAnimating ? 1 : 0,
+                transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+              }
+            : {
+                top: fullHeight ? "max(44px, env(safe-area-inset-top, 44px))" : undefined,
+                transform: isAnimating ? "translateY(0)" : "translateY(100%)",
+                transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+              }
+        }
       >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-          <div className="w-10 h-1 bg-gray-300 rounded-full" />
-        </div>
+        {/* Handle (только mobile) */}
+        {!isDesktop && (
+          <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+            <div className="w-10 h-1 bg-gray-300 rounded-full" />
+          </div>
+        )}
 
         {/* Title */}
         {title && (

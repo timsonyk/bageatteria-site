@@ -26,6 +26,7 @@ function pluralizeTovar(n: number): string {
 export default function MenuPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
@@ -48,6 +49,20 @@ export default function MenuPage() {
       }
     }
     loadCategories();
+  }, []);
+
+  // Полный каталог без фильтра по точке (для отображения избранного,
+  // когда товар есть в избранном, но недоступен на текущей точке)
+  useEffect(() => {
+    async function loadAllProducts() {
+      try {
+        const data = await getProducts(undefined, undefined);
+        setAllProducts(data.filter((p) => p.is_active));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadAllProducts();
   }, []);
 
   // Загрузка товаров при смене точки
@@ -110,6 +125,23 @@ export default function MenuPage() {
       return a.sort_order - b.sort_order;
     });
   }, [products, categories]);
+
+  // Для избранного нужен полный каталог (а не только доступный на точке)
+  const sortedAllProducts = useMemo(() => {
+    const categoryOrder = new Map(categories.map((c) => [c.id, c.sort_order]));
+    return [...allProducts].sort((a, b) => {
+      const catOrderA = categoryOrder.get(a.category_id) ?? 999;
+      const catOrderB = categoryOrder.get(b.category_id) ?? 999;
+      if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+      return a.sort_order - b.sort_order;
+    });
+  }, [allProducts, categories]);
+
+  // ID товаров, доступных на текущей точке — для пометки недоступных в избранном
+  const availableProductIds = useMemo(
+    () => new Set(products.map((p) => p.id)),
+    [products]
+  );
 
   // Отслеживание скролла для автоматической смены категории
   useEffect(() => {
@@ -183,14 +215,16 @@ export default function MenuPage() {
     setTimeout(() => setIsFavoritesSheetOpen(true), 300);
   }, []);
 
-  // Клик по товару из листа избранного: закрыть лист, открыть модалку
+  // Клик по товару из листа избранного: закрыть лист, открыть модалку.
+  // Если товар недоступен на текущей точке — игнорируем клик.
   const handleFavoritesProductClick = useCallback((product: Product) => {
+    if (!availableProductIds.has(product.id)) return;
     setIsFavoritesSheetOpen(false);
     setTimeout(() => {
       setSelectedProduct(product);
       setIsModalOpen(true);
     }, 300);
-  }, []);
+  }, [availableProductIds]);
 
   if (error) {
     return (
@@ -212,7 +246,7 @@ export default function MenuPage() {
     <div className="min-h-screen bg-background">
       <Header rightElement={<LocationSelector onLocationChange={handleLocationChange} />} />
 
-      <main className={`px-2.5 ${totalQty > 0 ? "pb-28" : "pb-6"}`}>
+      <main className={`px-2.5 md:px-8 max-w-[1200px] mx-auto ${totalQty > 0 ? "pb-28" : "pb-6"}`}>
         {/* Фокус дня и рекомендации — над каталогом */}
         {!loading && selectedLocationId !== null && (
           <>
@@ -279,7 +313,8 @@ export default function MenuPage() {
       <FavoritesSheet
         isOpen={isFavoritesSheetOpen}
         onClose={() => setIsFavoritesSheetOpen(false)}
-        products={sortedProducts}
+        products={sortedAllProducts}
+        availableProductIds={availableProductIds}
         categories={categories}
         onProductClick={handleFavoritesProductClick}
         recommendedProducts={products.filter((p) => p.is_active && p.is_recommended_favorites)}
@@ -301,7 +336,7 @@ export default function MenuPage() {
         <button
           type="button"
           onClick={() => setIsFavoritesSheetOpen(true)}
-          className="w-full h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform"
+          className="w-full max-w-[1200px] mx-auto h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-5 active:scale-[0.98] transition-transform"
         >
           <span className="text-[17px] font-semibold text-black">
             Избранное · {totalQty} {pluralizeTovar(totalQty)}

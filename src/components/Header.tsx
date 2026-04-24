@@ -10,7 +10,7 @@ export function Header({ rightElement }: HeaderProps) {
       className="bg-background"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between h-14 px-4 max-w-[1200px] mx-auto md:px-8">
         <Image
           src="/logo.svg"
           alt="Bageatteria"

@@ -13,6 +13,7 @@ interface FavoritesSheetProps {
   isOpen: boolean;
   onClose: () => void;
   products: Product[];
+  availableProductIds?: Set<number>;
   categories: Category[];
   onProductClick: (product: Product) => void;
   recommendedProducts?: Product[];
@@ -32,6 +33,7 @@ export function FavoritesSheet({
   isOpen,
   onClose,
   products,
+  availableProductIds,
   onProductClick,
   recommendedProducts = [],
 }: FavoritesSheetProps) {
@@ -51,10 +53,12 @@ export function FavoritesSheet({
           if (!product) return null;
           const price = computeVariantPrice(product, e.sizeId, e.optionIds);
           const summary = variantSummary(product, e.sizeId, e.optionIds);
-          return { entry: e, product, price, summary };
+          const isAvailable =
+            availableProductIds === undefined || availableProductIds.has(product.id);
+          return { entry: e, product, price, summary, isAvailable };
         })
         .filter((x): x is NonNullable<typeof x> => x !== null),
-    [entries, productMap]
+    [entries, productMap, availableProductIds]
   );
 
   return (
@@ -89,14 +93,18 @@ export function FavoritesSheet({
             </div>
           ) : (
             <ul>
-              {rows.map(({ entry, product, price, summary }) => (
+              {rows.map(({ entry, product, price, summary, isAvailable }) => (
                 <li
                   key={entry.key}
-                  className="flex items-center gap-3 px-4 py-3 border-b border-[#F2F2F7] last:border-b-0 active:bg-[#F9F9FB] transition-colors cursor-pointer"
-                  onClick={() => onProductClick(product)}
+                  className={`flex items-center gap-3 px-4 py-3 border-b border-[#F2F2F7] last:border-b-0 transition-colors ${
+                    isAvailable ? "active:bg-[#F9F9FB] cursor-pointer" : "cursor-default"
+                  }`}
+                  onClick={() => { if (isAvailable) onProductClick(product); }}
                 >
                   <div
-                    className="relative w-[72px] h-[72px] rounded-[14px] overflow-hidden flex-shrink-0"
+                    className={`relative w-[72px] h-[72px] rounded-[14px] overflow-hidden flex-shrink-0 ${
+                      isAvailable ? "" : "opacity-40"
+                    }`}
                     style={getProductImageUrl(product) ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
                   >
                     {getProductImageUrl(product) && (
@@ -111,17 +119,25 @@ export function FavoritesSheet({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-semibold text-black truncate leading-tight">
+                    <div className={`text-[15px] font-semibold truncate leading-tight ${isAvailable ? "text-black" : "text-[#8E8E93]"}`}>
                       {product.name}
                     </div>
-                    {summary && (
-                      <div className="text-[13px] text-[#8E8E93] truncate mt-0.5">
-                        {summary}
+                    {isAvailable ? (
+                      <>
+                        {summary && (
+                          <div className="text-[13px] text-[#8E8E93] truncate mt-0.5">
+                            {summary}
+                          </div>
+                        )}
+                        <div className="text-[14px] font-semibold text-black mt-1">
+                          {price.toLocaleString("ru-RU")} ₽
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[13px] text-[#FF3B30] truncate mt-0.5">
+                        Нет на этой точке
                       </div>
                     )}
-                    <div className="text-[14px] font-semibold text-black mt-1">
-                      {price.toLocaleString("ru-RU")} ₽
-                    </div>
                   </div>
                   <div
                     className="flex-shrink-0 h-9 rounded-full bg-[#F2F2F7] flex items-center px-1"

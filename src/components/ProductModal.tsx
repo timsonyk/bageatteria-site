@@ -102,16 +102,25 @@ function ProductCard({
     : parseFloat(product.base_price);
   const price = basePrice + modsExtra;
 
-  // Динамический КБЖУ. Приоритетный путь:
-  //   per_100g (базы или выбранной опции) × volume_ml выбранного размера / 100
-  // Если нет per_100g или volume_ml — fallback на per-portion (ProductSize/Product).
-  // Модификации: per_100g опции ПОЛНОСТЬЮ заменяет базовый per_100g.
-  // Потом применяем процент и абсолют (для «+1 яйцо» и пр.).
+  // Динамический КБЖУ.
+  //   Базовый путь: per_100g продукта × volume_ml выбранного размера / 100.
+  //   Выбранная опция с per_100g — ПОЛНОСТЬЮ заменяет per_100g продукта
+  //     (это КБЖУ готового продукта С ЭТОЙ МОДИФИКАЦИЕЙ, на 100 г).
+  //   Если per_100g не задан — fallback на per-portion (ProductSize или Product).
   const dynamicKbju = useMemo(() => {
     const currentSize = hasSizes ? sortedSizes[selectedSizeIndex] : null;
-    const volume =
-      (currentSize && currentSize.volume_ml) ||
-      (product.weight ? parseInt(product.weight, 10) : null);
+    // Нормализуем вес/объём в базовые единицы (г или мл).
+    // ProductSize.volume_ml всегда уже в мл.
+    // product.weight может быть числом в единицах категории (г / кг / мл / л).
+    const parseWeight = (): number | null => {
+      if (!product.weight) return null;
+      const raw = parseFloat(String(product.weight).replace(",", "."));
+      if (!Number.isFinite(raw)) return null;
+      const unit = (categoryUnit || "").toLowerCase();
+      if (unit === "кг" || unit === "л") return raw * 1000;
+      return raw;
+    };
+    const volume = (currentSize && currentSize.volume_ml) || parseWeight();
 
     // Base per-100g: из продукта (или переопределённое выбранной опцией)
     let kcal100 = product.calories_per_100g;
@@ -147,21 +156,6 @@ function ProductCard({
     if (fat == null) fat = pickFallback(currentSize?.fats, product.fats);
     if (carb == null) carb = pickFallback(currentSize?.carbs, product.carbs);
 
-    // Абсолютные дельты (для добавок типа «+1 яйцо») — только если per-100g не задано
-    const addAbs = (
-      baseVal: number | null | undefined,
-      abs: number | null | undefined,
-    ) => (baseVal == null || abs == null ? baseVal : baseVal + abs);
-    modGroups.forEach((g) =>
-      g.options.forEach((o) => {
-        if (!selectedOptions.has(o.id)) return;
-        if (o.calories_per_100g == null) kcal = addAbs(kcal, o.calories);
-        if (o.proteins_per_100g == null) prot = addAbs(prot, o.proteins);
-        if (o.fats_per_100g == null) fat = addAbs(fat, o.fats);
-        if (o.carbs_per_100g == null) carb = addAbs(carb, o.carbs);
-      })
-    );
-
     const clamp1 = (v: number | null | undefined) =>
       v == null ? null : Math.round(Math.max(0, v) * 10) / 10;
     return {
@@ -170,7 +164,7 @@ function ProductCard({
       fats: clamp1(fat),
       carbs: clamp1(carb),
     };
-  }, [hasSizes, sortedSizes, selectedSizeIndex, product, modGroups, selectedOptions]);
+  }, [hasSizes, sortedSizes, selectedSizeIndex, product, categoryUnit, modGroups, selectedOptions]);
 
   const currentSizeId = hasSizes ? sortedSizes[selectedSizeIndex]?.id ?? null : null;
   const currentOptionIds = useMemo(
@@ -471,6 +465,14 @@ export function ProductModal({
     }
     return map;
   }, [categories]);
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -558,9 +560,9 @@ export function ProductModal({
     }
   }, [currentIndex, products, onProductChange, isTransitioning]);
 
-  // iOS Safari theme-color: серый #7c7c7b пока открыта карточка товара
+  // iOS Safari theme-color: серый #7c7c7b пока открыта карточка товара (только mobile)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isDesktop) return;
     const meta =
       document.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ??
       (() => {
@@ -575,7 +577,7 @@ export function ProductModal({
       if (prev === null) meta.remove();
       else meta.setAttribute("content", prev);
     };
-  }, [isOpen]);
+  }, [isOpen, isDesktop]);
 
   // Animation handling
   useEffect(() => {
@@ -752,18 +754,20 @@ export function ProductModal({
   if (!isVisible || !product) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Safe-area top fill — серая плашка #7c7c7b под статус-баром iOS */}
-      <div
-        className="absolute inset-x-0 top-0 pointer-events-none"
-        style={{
-          height: "env(safe-area-inset-top, 0px)",
-          backgroundColor: "#7c7c7b",
-          opacity: isAnimating ? 1 : 0,
-          transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-          zIndex: 1,
-        }}
-      />
+    <div className={`fixed inset-0 z-50 ${isDesktop ? "flex items-center justify-center" : ""}`}>
+      {/* Safe-area top fill — серая плашка #7c7c7b под статус-баром iOS (только mobile) */}
+      {!isDesktop && (
+        <div
+          className="absolute inset-x-0 top-0 pointer-events-none"
+          style={{
+            height: "env(safe-area-inset-top, 0px)",
+            backgroundColor: "#7c7c7b",
+            opacity: isAnimating ? 1 : 0,
+            transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+            zIndex: 1,
+          }}
+        />
+      )}
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black"
@@ -776,8 +780,8 @@ export function ProductModal({
         onClick={onClose}
       />
 
-      {/* Navigation dots */}
-      {products.length > 1 && (
+      {/* Navigation dots — только mobile (на десктопе карусели нет) */}
+      {products.length > 1 && !isDesktop && (
         <div
           className="absolute left-0 right-0 flex justify-center z-20 pointer-events-none"
           style={{
@@ -852,31 +856,45 @@ export function ProductModal({
 
       {/* Modal Sheet */}
       <div
-        className="absolute inset-x-0 bottom-0 bg-white rounded-t-[20px] overflow-hidden transform"
-        style={{
-          top: "max(44px, env(safe-area-inset-top, 44px))",
-          transform: isAnimating
-            ? `translateY(${verticalOffset}px)`
-            : "translateY(100%)",
-          transition: (isTransitioning || !isAnimating || verticalOffset === 0)
-            ? "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)"
-            : "none",
-        }}
+        className={
+          isDesktop
+            ? "relative bg-white rounded-[20px] w-[560px] max-w-[calc(100vw-32px)] max-h-[85vh] overflow-hidden flex flex-col"
+            : "absolute inset-x-0 bottom-0 bg-white rounded-t-[20px] overflow-hidden transform"
+        }
+        style={
+          isDesktop
+            ? {
+                transform: isAnimating ? "none" : "scale(0.96)",
+                opacity: isAnimating ? 1 : 0,
+                transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+              }
+            : {
+                top: "max(44px, env(safe-area-inset-top, 44px))",
+                transform: isAnimating
+                  ? `translateY(${verticalOffset}px)`
+                  : "translateY(100%)",
+                transition: (isTransitioning || !isAnimating || verticalOffset === 0)
+                  ? "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)"
+                  : "none",
+              }
+        }
       >
-        {/* Handle - draggable area */}
-        <div
-          className="flex justify-center pt-3 pb-4 cursor-grab active:cursor-grabbing touch-none"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div className="w-10 h-1 bg-gray-300 rounded-full" />
-        </div>
+        {/* Handle - draggable area (только mobile) */}
+        {!isDesktop && (
+          <div
+            className="flex justify-center pt-3 pb-4 cursor-grab active:cursor-grabbing touch-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full" />
+          </div>
+        )}
 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-10"
+          className={`absolute ${isDesktop ? "top-4 right-4" : "top-3 right-4"} p-2 rounded-full hover:bg-gray-100 transition-colors z-10`}
         >
           <svg
             width="24"
@@ -893,31 +911,47 @@ export function ProductModal({
           </svg>
         </button>
 
-        {/* Swipeable Carousel */}
-        <div
-          className="h-[calc(100%-40px)] overflow-hidden"
-          onTouchStart={handleCarouselTouchStart}
-          onTouchMove={handleCarouselTouchMove}
-          onTouchEnd={handleCarouselTouchEnd}
-        >
+        {isDesktop ? (
+          /* Desktop: одна карточка, без карусели и свайпов */
           <div
-            className="flex h-full"
-            style={{
-              transform: `translateX(calc(-${hasPrev ? 100 : 0}% + ${swipeOffset}px))`,
-              transition: isTransitioning ? "transform 0.25s ease-out" : "none",
-            }}
+            ref={scrollContainerRef}
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain pt-4 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none" }}
           >
-            {carouselProducts.map(({ product: p, position }) => (
-              <div
-                key={p.id}
-                ref={position === 0 ? scrollContainerRef : undefined}
-                className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
-              >
-                <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} onOpenFavorites={onOpenFavorites} />
-              </div>
-            ))}
+            <ProductCard
+              product={product}
+              getImageUrl={getImageUrl}
+              categoryUnit={categoryMap.get(product.category_id)?.unit}
+              onOpenFavorites={onOpenFavorites}
+            />
           </div>
-        </div>
+        ) : (
+          /* Mobile: свайпы + карусель prev/current/next */
+          <div
+            className="h-[calc(100%-40px)] overflow-hidden"
+            onTouchStart={handleCarouselTouchStart}
+            onTouchMove={handleCarouselTouchMove}
+            onTouchEnd={handleCarouselTouchEnd}
+          >
+            <div
+              className="flex h-full"
+              style={{
+                transform: `translateX(calc(-${hasPrev ? 100 : 0}% + ${swipeOffset}px))`,
+                transition: isTransitioning ? "transform 0.25s ease-out" : "none",
+              }}
+            >
+              {carouselProducts.map(({ product: p, position }) => (
+                <div
+                  key={p.id}
+                  ref={position === 0 ? scrollContainerRef : undefined}
+                  className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
+                >
+                  <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} onOpenFavorites={onOpenFavorites} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

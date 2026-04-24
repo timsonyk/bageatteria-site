@@ -46,10 +46,10 @@ export function CategoryTabs({ categories, activeId, onSelect }: CategoryTabsPro
   return (
     <div
       ref={containerRef}
-      className="sticky z-20 bg-background py-3 -mx-2.5 px-2.5 overflow-x-auto scrollbar-hide"
-      style={{ top: "env(safe-area-inset-top, 0px)" }}
+      className="sticky z-20 bg-background py-3 -mx-2.5 md:-mx-8 px-2.5 md:px-8 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+      style={{ top: "env(safe-area-inset-top, 0px)", scrollbarWidth: "none" }}
     >
-      <div className="relative flex gap-2">
+      <div className="relative flex gap-2 md:gap-3">
         {/* Анимированный индикатор (подчёркивание) */}
         <div
           className="absolute bottom-0 h-[2px] bg-black rounded-full transition-all duration-300 ease-out"

@@ -55,13 +55,12 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
               key={p.id}
               onClick={() => onProductClick(p)}
               style={{
-                flex: "0 0 150px",
                 background: "#FFFEFA",
                 borderRadius: 16,
                 padding: 10,
                 scrollSnapAlign: "start",
               }}
-              className="cursor-pointer active:scale-[0.98] transition-transform"
+              className="cursor-pointer active:scale-[0.98] transition-transform flex-[0_0_150px] md:flex-[0_0_200px]"
             >
               <div
                 className="relative"
@@ -77,7 +76,7 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
                     src={imageUrl}
                     alt={p.name}
                     fill
-                    sizes="150px"
+                    sizes="(max-width: 768px) 150px, 200px"
                     className="object-cover"
                     unoptimized
                   />

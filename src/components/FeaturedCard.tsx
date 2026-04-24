@@ -35,11 +35,8 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
       </div>
       <div
         onClick={onClick}
-        className="relative rounded-[24px] overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
-        style={{
-          aspectRatio: "1 / 1.15",
-          ...(imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE),
-        }}
+        className="relative rounded-[24px] overflow-hidden cursor-pointer active:scale-[0.99] transition-transform aspect-[1/1.15] md:aspect-[2.4/1]"
+        style={imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
       >
         {imageUrl && (
           <Image
@@ -47,31 +44,30 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
             alt={product.name}
             fill
             className="object-cover"
-            sizes="100vw"
+            sizes="(max-width: 768px) 100vw, 1200px"
             unoptimized
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent md:bg-gradient-to-r md:from-black/70 md:via-black/30 md:to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10 md:inset-y-0 md:right-auto md:max-w-[50%] md:flex md:flex-col md:justify-end md:p-8">
           <h2
-            className="text-white leading-[1.05] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)]"
-            style={{ fontSize: 32, fontWeight: 500 }}
+            className="text-white leading-[1.05] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] text-[32px] md:text-[40px]"
+            style={{ fontWeight: 500 }}
           >
             {product.name}
           </h2>
           {product.featured_text && (
             <p
-              className="text-white/85 mt-2 leading-snug line-clamp-2"
-              style={{ fontSize: 13 }}
+              className="text-white/85 mt-2 leading-snug line-clamp-2 text-[13px] md:text-[15px]"
             >
               {product.featured_text}
             </p>
           )}
-          <div className="flex items-end justify-between mt-4">
+          <div className="flex items-end mt-4">
             <div className="flex items-center gap-2">
               <span
-                className="text-white leading-none"
-                style={{ fontSize: 24, fontWeight: 600 }}
+                className="text-white leading-none text-[24px] md:text-[28px]"
+                style={{ fontWeight: 600 }}
               >
                 {price.toLocaleString("ru-RU")} ₽
               </span>
@@ -84,10 +80,11 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
                 </span>
               )}
             </div>
-            <div onClick={stop}>
-              <FavoriteButton product={product} />
-            </div>
           </div>
+        </div>
+        {/* Сердечко — в правый нижний угол постера */}
+        <div className="absolute bottom-5 right-5 md:bottom-8 md:right-8 z-10" onClick={stop}>
+          <FavoriteButton product={product} />
         </div>
       </div>
     </section>
