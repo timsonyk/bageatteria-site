@@ -115,6 +115,12 @@ export default function MenuPage() {
     return grouped;
   }, [products]);
 
+  // Видимые категории — только те, где есть товары на текущей точке
+  const visibleCategories = useMemo(
+    () => categories.filter((c) => (productsByCategory[c.id] || []).length > 0),
+    [categories, productsByCategory]
+  );
+
   // Сортировка товаров для модалки: сначала по категории, потом по sort_order
   const sortedProducts = useMemo(() => {
     const categoryOrder = new Map(categories.map((c) => [c.id, c.sort_order]));
@@ -266,7 +272,7 @@ export default function MenuPage() {
 
         {/* Табы категорий */}
         <CategoryTabs
-          categories={categories}
+          categories={visibleCategories}
           activeId={activeCategory}
           onSelect={handleCategorySelect}
         />
