@@ -3,10 +3,11 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db
-from app.models.catalog import Banner, Category, Product, ModificationGroup, DeliveryZone, StoreLocation, FAQ, CategoryRecommendation, ProductStoreAvailability
+from app.models.catalog import Banner, Category, Product, ModificationGroup, DeliveryZone, StoreLocation, FAQ, CategoryRecommendation, ProductStoreAvailability, CategoryStoreAvailability
 from app.schemas.catalog import BannerOut, CategoryOut, ProductOut
 from app.services.pricing import _find_delivery_zone, _point_in_polygon
 
@@ -136,6 +137,25 @@ def list_products(
             ProductStoreAvailability.store_location_id == store_location_id
         ).subquery()
         query = query.filter(Product.id.in_(available_product_ids))
+
+        # Также фильтруем по доступности КАТЕГОРИИ на этой точке.
+        # Логика: если у категории ВООБЩЕ есть записи в CategoryStoreAvailability,
+        # она считается «настроенной» — товар показываем только если эта точка в её записях.
+        # Если записей нет вообще — категория доступна везде (back-compat).
+        configured_category_ids = db.query(
+            CategoryStoreAvailability.category_id
+        ).distinct().subquery()
+        available_category_ids = db.query(
+            CategoryStoreAvailability.category_id
+        ).filter(
+            CategoryStoreAvailability.store_location_id == store_location_id
+        ).subquery()
+        query = query.filter(
+            or_(
+                Product.category_id.notin_(configured_category_ids),
+                Product.category_id.in_(available_category_ids),
+            )
+        )
 
     products = query.order_by(Product.sort_order).all()
     return [_normalize_product_media(ProductOut.model_validate(p)) for p in products]

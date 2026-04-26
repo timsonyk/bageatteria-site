@@ -742,24 +742,38 @@ export const ProductsPage = () => {
                 setFileList((prev) => prev.filter((f) => f.uid !== file.uid))
               }}
               onDownload={async (file) => {
-                const url = file.url || ((file.response as any)?.url ? toDisplayUrl((file.response as any).url) : undefined)
-                if (!url) return
+                const rawUrl = (file.response as any)?.url || toStoredUrl(file.url || '')
+                const displayUrl = file.url || (rawUrl ? toDisplayUrl(rawUrl) : undefined)
+                if (!displayUrl) {
+                  message.error('Не удалось получить URL файла для кадрирования')
+                  return
+                }
                 try {
-                  const res = await fetch(url)
-                  const origBlob = await res.blob()
+                  // Относительные пути отрабатываются через baseURL axios, абсолютные — напрямую.
+                  const fetchUrl = rawUrl && rawUrl.startsWith('/') ? rawUrl : displayUrl
+                  const res = await api.get(fetchUrl, { responseType: 'blob' })
+                  const origBlob = res.data as Blob
                   const src = URL.createObjectURL(origBlob)
-                  const cropped = await openCropper(src)
-                  URL.revokeObjectURL(src)
-                  const rawUrl = await uploadBlob(cropped, `cropped-${file.uid}.jpg`)
+                  let cropped: Blob
+                  try {
+                    cropped = await openCropper(src)
+                  } finally {
+                    URL.revokeObjectURL(src)
+                  }
+                  const uploadedUrl = await uploadBlob(cropped, `cropped-${file.uid}.jpg`)
                   setFileList((prev) =>
                     prev.map((f) =>
                       f.uid === file.uid
-                        ? { ...f, url: toDisplayUrl(rawUrl), status: 'done', response: { url: rawUrl } }
+                        ? { ...f, url: toDisplayUrl(uploadedUrl), status: 'done', response: { url: uploadedUrl } }
                         : f
                     )
                   )
                 } catch (err: any) {
-                  if (err) message.error(err?.response?.data?.detail || 'Ошибка кадрирования')
+                  // Отмена кадрирования — reject() без ошибки, тогда err undefined
+                  if (err) {
+                    console.error('Recrop error:', err)
+                    message.error(err?.response?.data?.detail || err?.message || 'Ошибка кадрирования')
+                  }
                 }
               }}
               showUploadList={{
