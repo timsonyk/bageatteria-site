@@ -183,7 +183,7 @@ export function FavoritesSheet({
             <div className="px-4 pt-5 pb-6">
               <h3 className="text-[20px] font-medium text-black tracking-[-0.3px] leading-none mb-3">Попробуйте ещё</h3>
               <div
-                className="flex gap-2.5 overflow-x-auto snap-x -mx-4 px-4"
+                className="flex gap-2.5 overflow-x-auto snap-x -mx-4 px-4 scroll-pl-4 scroll-pr-4"
                 style={{ scrollbarWidth: "none" }}
               >
                 {recommendedProducts.map((p) => (
