@@ -286,6 +286,41 @@ export const ProductsPage = () => {
     })
     return res.data.url as string
   }
+
+  // Повторное кадрирование уже загруженной картинки.
+  const recropFile = async (file: UploadFile) => {
+    const rawUrl = (file.response as any)?.url || toStoredUrl(file.url || '')
+    const displayUrl = file.url || (rawUrl ? toDisplayUrl(rawUrl) : undefined)
+    if (!displayUrl) {
+      message.error('Не удалось получить URL файла для кадрирования')
+      return
+    }
+    try {
+      const fetchUrl = rawUrl && rawUrl.startsWith('/') ? rawUrl : displayUrl
+      const res = await api.get(fetchUrl, { responseType: 'blob' })
+      const origBlob = res.data as Blob
+      const src = URL.createObjectURL(origBlob)
+      let cropped: Blob
+      try {
+        cropped = await openCropper(src)
+      } finally {
+        URL.revokeObjectURL(src)
+      }
+      const uploadedUrl = await uploadBlob(cropped, `cropped-${file.uid}.jpg`)
+      setFileList((prev) =>
+        prev.map((f) =>
+          f.uid === file.uid
+            ? { ...f, url: toDisplayUrl(uploadedUrl), status: 'done', response: { url: uploadedUrl } }
+            : f
+        )
+      )
+    } catch (err: any) {
+      if (err) {
+        console.error('Recrop error:', err)
+        message.error(err?.response?.data?.detail || err?.message || 'Ошибка кадрирования')
+      }
+    }
+  }
   const [searchQuery, setSearchQuery] = useState('')
 
   // Local state for optimistic reordering
@@ -741,47 +776,31 @@ export const ProductsPage = () => {
               onRemove={(file) => {
                 setFileList((prev) => prev.filter((f) => f.uid !== file.uid))
               }}
-              onDownload={async (file) => {
-                const rawUrl = (file.response as any)?.url || toStoredUrl(file.url || '')
-                const displayUrl = file.url || (rawUrl ? toDisplayUrl(rawUrl) : undefined)
-                if (!displayUrl) {
-                  message.error('Не удалось получить URL файла для кадрирования')
-                  return
-                }
-                try {
-                  // Относительные пути отрабатываются через baseURL axios, абсолютные — напрямую.
-                  const fetchUrl = rawUrl && rawUrl.startsWith('/') ? rawUrl : displayUrl
-                  const res = await api.get(fetchUrl, { responseType: 'blob' })
-                  const origBlob = res.data as Blob
-                  const src = URL.createObjectURL(origBlob)
-                  let cropped: Blob
-                  try {
-                    cropped = await openCropper(src)
-                  } finally {
-                    URL.revokeObjectURL(src)
-                  }
-                  const uploadedUrl = await uploadBlob(cropped, `cropped-${file.uid}.jpg`)
-                  setFileList((prev) =>
-                    prev.map((f) =>
-                      f.uid === file.uid
-                        ? { ...f, url: toDisplayUrl(uploadedUrl), status: 'done', response: { url: uploadedUrl } }
-                        : f
-                    )
-                  )
-                } catch (err: any) {
-                  // Отмена кадрирования — reject() без ошибки, тогда err undefined
-                  if (err) {
-                    console.error('Recrop error:', err)
-                    message.error(err?.response?.data?.detail || err?.message || 'Ошибка кадрирования')
-                  }
-                }
-              }}
-              showUploadList={{
-                showPreviewIcon: true,
-                showRemoveIcon: true,
-                showDownloadIcon: true,
-                downloadIcon: <ScissorOutlined title="Кадрировать" />,
-              }}
+              itemRender={(originNode, file) => (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  {originNode}
+                  {file.status === 'done' && (
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<ScissorOutlined />}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        recropFile(file)
+                      }}
+                      title="Кадрировать"
+                      style={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        zIndex: 2,
+                        padding: '0 6px',
+                      }}
+                    />
+                  )}
+                </div>
+              )}
               accept="image/*"
               listType="picture-card"
             >
