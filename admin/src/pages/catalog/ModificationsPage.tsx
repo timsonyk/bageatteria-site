@@ -177,6 +177,8 @@ export const ModificationsPage = () => {
         <Select
           placeholder="Фильтр по товару"
           allowClear
+          showSearch
+          optionFilterProp="label"
           style={{ width: 240 }}
           value={productFilter}
           onChange={(v) => setProductFilter(v)}
@@ -186,7 +188,7 @@ export const ModificationsPage = () => {
           Новая группа
         </Button>
       </Space>
-      <Table loading={isLoading} dataSource={groups || []} columns={groupColumns} rowKey="id" />
+      <Table loading={isLoading} dataSource={groups || []} columns={groupColumns} rowKey="id" pagination={false} />
 
       <Modal
         open={openGroup}
@@ -211,6 +213,8 @@ export const ModificationsPage = () => {
             <Select
               mode="multiple"
               allowClear
+              showSearch
+              optionFilterProp="label"
               options={(products || []).map((p: any) => ({ value: p.id, label: p.name }))}
               placeholder="Выберите товары"
             />
