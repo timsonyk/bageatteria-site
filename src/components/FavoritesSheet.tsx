@@ -6,7 +6,7 @@ import { Heart, Minus, Plus, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { Product, Category } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
-import { computeVariantPrice, variantSummary } from "@/lib/favorites";
+import { computeVariantPrice, variantSummaryLines } from "@/lib/favorites";
 import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface FavoritesSheetProps {
@@ -52,10 +52,10 @@ export function FavoritesSheet({
           const product = productMap.get(e.productId);
           if (!product) return null;
           const price = computeVariantPrice(product, e.sizeId, e.optionIds);
-          const summary = variantSummary(product, e.sizeId, e.optionIds);
+          const summaryLines = variantSummaryLines(product, e.sizeId, e.optionIds);
           const isAvailable =
             availableProductIds === undefined || availableProductIds.has(product.id);
-          return { entry: e, product, price, summary, isAvailable };
+          return { entry: e, product, price, summaryLines, isAvailable };
         })
         .filter((x): x is NonNullable<typeof x> => x !== null),
     [entries, productMap, availableProductIds]
@@ -93,7 +93,7 @@ export function FavoritesSheet({
             </div>
           ) : (
             <ul>
-              {rows.map(({ entry, product, price, summary, isAvailable }) => (
+              {rows.map(({ entry, product, price, summaryLines, isAvailable }) => (
                 <li
                   key={entry.key}
                   className={`flex items-center gap-3 px-4 py-3 border-b border-[#F2F2F7] last:border-b-0 transition-colors ${
@@ -124,9 +124,13 @@ export function FavoritesSheet({
                     </div>
                     {isAvailable ? (
                       <>
-                        {summary && (
-                          <div className="text-[13px] text-[#8E8E93] truncate mt-0.5">
-                            {summary}
+                        {summaryLines.length > 0 && (
+                          <div className="text-[13px] text-[#8E8E93] mt-0.5 leading-snug">
+                            {summaryLines.map((line, i) => (
+                              <div key={i} className="truncate">
+                                {line}
+                              </div>
+                            ))}
                           </div>
                         )}
                         <div className="text-[14px] font-semibold text-black mt-1">

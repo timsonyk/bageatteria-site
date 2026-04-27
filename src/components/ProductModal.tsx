@@ -156,6 +156,22 @@ function ProductCard({
     if (fat == null) fat = pickFallback(currentSize?.fats, product.fats);
     if (carb == null) carb = pickFallback(currentSize?.carbs, product.carbs);
 
+    // Абсолютная дельта от выбранных опций (для добавок типа «+1 яйцо»).
+    // Применяется только если у опции НЕ задан per-100g (тогда per-100g уже сработал выше).
+    const addAbs = (
+      base: number | null | undefined,
+      delta: number | null | undefined,
+    ) => (base == null || delta == null ? base : base + delta);
+    modGroups.forEach((g) =>
+      g.options.forEach((o) => {
+        if (!selectedOptions.has(o.id)) return;
+        if (o.calories_per_100g == null) kcal = addAbs(kcal, o.calories);
+        if (o.proteins_per_100g == null) prot = addAbs(prot, o.proteins);
+        if (o.fats_per_100g == null) fat = addAbs(fat, o.fats);
+        if (o.carbs_per_100g == null) carb = addAbs(carb, o.carbs);
+      })
+    );
+
     const clamp1 = (v: number | null | undefined) =>
       v == null ? null : Math.round(Math.max(0, v) * 10) / 10;
     return {

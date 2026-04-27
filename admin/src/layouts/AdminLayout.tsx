@@ -88,8 +88,20 @@ export const AdminLayout = () => {
   const selectedKeys = [location.pathname.startsWith('/catalog') ? '/catalog' : location.pathname]
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider theme={isDark ? 'dark' : 'light'} style={{ background: token.colorBgContainer }}>
+    <Layout style={{ minHeight: '100vh' }} hasSider>
+      <Sider
+        theme={isDark ? 'dark' : 'light'}
+        style={{
+          background: token.colorBgContainer,
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          height: '100vh',
+          overflow: 'auto',
+          zIndex: 10,
+        }}
+      >
         <div style={{ padding: 16 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
             Bageatteria
@@ -102,7 +114,7 @@ export const AdminLayout = () => {
           style={{ background: 'transparent', borderInlineEnd: 'none' }}
         />
       </Sider>
-      <Layout>
+      <Layout style={{ marginInlineStart: 200 }}>
         <Header
           style={{
             background: token.colorBgContainer,
