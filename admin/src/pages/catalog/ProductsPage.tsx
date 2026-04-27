@@ -296,8 +296,12 @@ export const ProductsPage = () => {
       return
     }
     try {
-      const fetchUrl = rawUrl && rawUrl.startsWith('/') ? rawUrl : displayUrl
-      const res = await api.get(fetchUrl, { responseType: 'blob' })
+      // Cache-busting: иначе браузер может отдать закэшированный ответ без CORS-заголовков.
+      const cacheBuster = `cb=${Date.now()}`
+      const baseFetchUrl = rawUrl && rawUrl.startsWith('/') ? rawUrl : displayUrl
+      const fetchUrl = baseFetchUrl + (baseFetchUrl.includes('?') ? '&' : '?') + cacheBuster
+      // /uploads/ — публичные файлы, креды не нужны (и проще для CORS).
+      const res = await api.get(fetchUrl, { responseType: 'blob', withCredentials: false })
       const origBlob = res.data as Blob
       const src = URL.createObjectURL(origBlob)
       let cropped: Blob
