@@ -63,7 +63,7 @@ export function FavoritesSheet({
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} fullHeight>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="px-4 pt-1 md:pt-5 pb-3 flex items-end justify-between flex-shrink-0">
           <h2 className="text-[28px] font-normal text-black tracking-[-0.6px] leading-none">Избранное</h2>
@@ -76,7 +76,7 @@ export function FavoritesSheet({
 
         {/* Body */}
         <div
-          className="flex-1 overflow-y-auto"
+          className="flex-1 min-h-0 overflow-y-auto"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {rows.length === 0 ? (
@@ -96,7 +96,7 @@ export function FavoritesSheet({
               {rows.map(({ entry, product, price, summaryLines, isAvailable }) => (
                 <li
                   key={entry.key}
-                  className={`flex items-center gap-3 px-4 py-3 border-b border-[#F2F2F7] last:border-b-0 transition-colors ${
+                  className={`flex items-start gap-3 px-4 py-3 border-b border-[#F2F2F7] last:border-b-0 transition-colors ${
                     isAvailable ? "active:bg-[#F9F9FB] cursor-pointer" : "cursor-default"
                   }`}
                   onClick={() => { if (isAvailable) onProductClick(product); }}

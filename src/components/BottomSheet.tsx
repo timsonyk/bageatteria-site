@@ -113,7 +113,7 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
       <div
         className={
           isDesktop
-            ? "relative bg-white rounded-[20px] w-[560px] max-w-[calc(100vw-32px)] max-h-[85vh] overflow-hidden flex flex-col"
+            ? `relative bg-white rounded-[20px] w-[560px] max-w-[calc(100vw-32px)] ${fullHeight ? "h-[85vh]" : "max-h-[85vh]"} overflow-hidden flex flex-col`
             : `absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] ${fullHeight ? "" : "max-h-[80vh]"} overflow-hidden flex flex-col`
         }
         style={
