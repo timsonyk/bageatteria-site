@@ -65,7 +65,7 @@ export function FavoritesSheet({
     <BottomSheet isOpen={isOpen} onClose={onClose} fullHeight>
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-4 pt-1 pb-3 flex items-end justify-between flex-shrink-0">
+        <div className="px-4 pt-1 md:pt-5 pb-3 flex items-end justify-between flex-shrink-0">
           <h2 className="text-[28px] font-normal text-black tracking-[-0.6px] leading-none">Избранное</h2>
           {totalQty > 0 && (
             <span className="text-[14px] text-[#8E8E93] leading-none">
