@@ -12,12 +12,15 @@ interface FeaturedCardProps {
   onProductClick: (p: Product) => void;
 }
 
-const AUTO_PLAY_MS = 7000;
+const AUTO_PLAY_MS = 10000;
 
 export function FeaturedCard({ products, categoryMap, onProductClick }: FeaturedCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
+  const [isHorizontalSwipe, setIsHorizontalSwipe] = useState(false);
+  const suppressClickRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const total = products.length;
 
@@ -37,22 +40,48 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
+    setTouchStartY(e.touches[0].clientY);
+    setIsHorizontalSwipe(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX == null) return;
-    setDragOffset(e.touches[0].clientX - touchStartX);
+    if (touchStartX == null || touchStartY == null) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (!isHorizontalSwipe) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+        setIsHorizontalSwipe(true);
+      } else if (Math.abs(dy) > 8) {
+        // Вертикальный жест — не наш, не вмешиваемся (страница скроллит).
+        setTouchStartX(null);
+        setTouchStartY(null);
+        return;
+      }
+    }
+    if (isHorizontalSwipe || Math.abs(dx) > Math.abs(dy)) {
+      setDragOffset(dx);
+    }
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX == null) return;
+    if (touchStartX == null) {
+      setDragOffset(0);
+      return;
+    }
     const offset = dragOffset;
     setTouchStartX(null);
+    setTouchStartY(null);
     setDragOffset(0);
-    if (Math.abs(offset) > 60) {
+    if (Math.abs(offset) > 50) {
+      // Подавляем последующий click (тач + клик после свайпа)
+      suppressClickRef.current = true;
+      setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 300);
       if (offset < 0 && activeIndex < total - 1) setActiveIndex(activeIndex + 1);
       else if (offset > 0 && activeIndex > 0) setActiveIndex(activeIndex - 1);
     }
+    setIsHorizontalSwipe(false);
   };
 
   const stopPointer = (e: MouseEvent) => e.stopPropagation();
@@ -94,7 +123,10 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
             return (
               <div
                 key={product.id}
-                onClick={() => onProductClick(product)}
+                onClick={() => {
+                  if (suppressClickRef.current) return;
+                  onProductClick(product);
+                }}
                 className="relative w-full h-full flex-shrink-0 cursor-pointer active:scale-[0.99] transition-transform"
                 style={imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
               >
