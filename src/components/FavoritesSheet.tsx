@@ -139,8 +139,35 @@ export function FavoritesSheet({
                             ))}
                           </div>
                         )}
-                        <div className="text-[14px] font-semibold text-black mt-1 tabular-nums">
-                          {(price * entry.qty).toLocaleString("ru-RU")} ₽
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[14px] font-semibold text-black tabular-nums">
+                            {(price * entry.qty).toLocaleString("ru-RU")} ₽
+                          </span>
+                          <div
+                            className="flex-shrink-0 h-8 rounded-full bg-[#F2F2F7] flex items-center px-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              aria-label="Уменьшить"
+                              onClick={() => decrementVariant(product.id, entry.sizeId, entry.optionIds)}
+                              disabled={entry.qty <= 1}
+                              className="w-7 h-7 flex items-center justify-center active:scale-[0.9] transition-transform disabled:opacity-30"
+                            >
+                              <Minus className="w-[14px] h-[14px] text-black" strokeWidth={2} />
+                            </button>
+                            <span className="text-[13px] font-semibold text-black tabular-nums min-w-[18px] text-center">
+                              {entry.qty}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label="Увеличить"
+                              onClick={() => addVariant(product.id, entry.sizeId, entry.optionIds)}
+                              className="w-7 h-7 flex items-center justify-center active:scale-[0.9] transition-transform"
+                            >
+                              <Plus className="w-[14px] h-[14px] text-black" strokeWidth={2} />
+                            </button>
+                          </div>
                         </div>
                       </>
                     ) : (
@@ -149,33 +176,6 @@ export function FavoritesSheet({
                       </div>
                     )}
                   </div>
-                  {isAvailable && (
-                    <div
-                      className="flex-shrink-0 h-9 rounded-full bg-[#F2F2F7] flex items-center px-1 self-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        aria-label="Уменьшить"
-                        onClick={() => decrementVariant(product.id, entry.sizeId, entry.optionIds)}
-                        disabled={entry.qty <= 1}
-                        className="w-8 h-8 flex items-center justify-center active:scale-[0.9] transition-transform disabled:opacity-30"
-                      >
-                        <Minus className="w-[16px] h-[16px] text-black" strokeWidth={2} />
-                      </button>
-                      <span className="text-[14px] font-semibold text-black tabular-nums min-w-[20px] text-center">
-                        {entry.qty}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label="Увеличить"
-                        onClick={() => addVariant(product.id, entry.sizeId, entry.optionIds)}
-                        className="w-8 h-8 flex items-center justify-center active:scale-[0.9] transition-transform"
-                      >
-                        <Plus className="w-[16px] h-[16px] text-black" strokeWidth={2} />
-                      </button>
-                    </div>
-                  )}
                   <button
                     type="button"
                     aria-label="Удалить из избранного"
