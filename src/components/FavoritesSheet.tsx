@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Image from "next/image";
 import { Heart, Minus, Plus, X } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { FavoriteButton } from "./FavoriteButton";
 import { Product, Category } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { computeVariantPrice, variantSummaryLines } from "@/lib/favorites";
@@ -221,9 +222,12 @@ export function FavoritesSheet({
                       <h4 className="text-[13px] font-medium text-black leading-tight line-clamp-2 min-h-[32px]">
                         {p.name}
                       </h4>
-                      <span className="text-[13px] text-black mt-0.5 block">
-                        {parseFloat(p.base_price).toLocaleString("ru-RU")} ₽
-                      </span>
+                      <div className="mt-0.5 flex items-center justify-between">
+                        <span className="text-[13px] text-black">
+                          {parseFloat(p.base_price).toLocaleString("ru-RU")} ₽
+                        </span>
+                        <FavoriteButton product={p} size="sm" />
+                      </div>
                     </div>
                   </div>
                 ))}

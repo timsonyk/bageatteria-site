@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Product, Category, ModificationGroup, ModificationOption } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
@@ -15,7 +15,6 @@ interface ProductModalProps {
   products: Product[];
   categories: Category[];
   onProductChange: (product: Product) => void;
-  onOpenFavorites?: () => void;
 }
 
 // Card component for a single product
@@ -23,12 +22,10 @@ function ProductCard({
   product,
   getImageUrl,
   categoryUnit,
-  onOpenFavorites,
 }: {
   product: Product;
   getImageUrl: (p: Product) => string | null;
   categoryUnit?: string;
-  onOpenFavorites?: () => void;
 }) {
   const imageUrl = getImageUrl(product);
   const sortedSizes = useMemo(() => {
@@ -188,9 +185,19 @@ function ProductCard({
     [selectedOptions]
   );
 
-  const { getVariantQty, getProductQty, addVariant, decrementVariant } = useFavorites();
-  const qty = getVariantQty(product.id, currentSizeId, currentOptionIds);
-  const productQty = getProductQty(product.id);
+  const { getVariantQty, addVariant, decrementVariant } = useFavorites();
+  const variantQty = getVariantQty(product.id, currentSizeId, currentOptionIds);
+
+  const toggleFavorite = useCallback(() => {
+    if (variantQty > 0) {
+      // Уменьшаем счётчик до нуля — полностью убираем этот вариант
+      for (let i = 0; i < variantQty; i++) {
+        decrementVariant(product.id, currentSizeId, currentOptionIds);
+      }
+    } else {
+      addVariant(product.id, currentSizeId, currentOptionIds);
+    }
+  }, [variantQty, product.id, currentSizeId, currentOptionIds, addVariant, decrementVariant]);
 
   // Формируем строку веса с единицей измерения
   const weightDisplay = useMemo(() => {
@@ -408,57 +415,22 @@ function ProductCard({
         )}
       </div>
       </div>
-      {/* Sticky bottom bar */}
+      {/* Плавающее сердечко — закреплено в правом нижнем углу карточки */}
       <div
-        className="sticky bottom-0 bg-white px-4 pt-3"
-        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+        className="sticky bottom-0 flex justify-end pointer-events-none"
+        style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", paddingRight: 16 }}
       >
-        <div className="flex items-center">
-          {qty === 0 ? (
-            <button
-              type="button"
-              onClick={() => addVariant(product.id, currentSizeId, currentOptionIds)}
-              className="flex-1 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-            >
-              <span className="text-[17px] font-semibold text-black">
-                {price.toLocaleString("ru-RU")} ₽
-              </span>
-              <Plus className="w-5 h-5 text-black" strokeWidth={2} />
-            </button>
-          ) : (
-            <div className="flex-1 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-between px-2">
-              <button
-                type="button"
-                aria-label="Уменьшить"
-                onClick={() => decrementVariant(product.id, currentSizeId, currentOptionIds)}
-                className="w-12 h-12 flex items-center justify-center active:scale-[0.9] transition-transform"
-              >
-                <Minus className="w-5 h-5 text-black" strokeWidth={2} />
-              </button>
-              <span className="text-[17px] font-semibold text-black tabular-nums">
-                {qty} × {price.toLocaleString("ru-RU")} ₽
-              </span>
-              <button
-                type="button"
-                aria-label="Увеличить"
-                onClick={() => addVariant(product.id, currentSizeId, currentOptionIds)}
-                className="w-12 h-12 flex items-center justify-center active:scale-[0.9] transition-transform"
-              >
-                <Plus className="w-5 h-5 text-black" strokeWidth={2} />
-              </button>
-            </div>
-          )}
-          <button
-            type="button"
-            aria-label="Избранное"
-            onClick={onOpenFavorites}
-            className={`h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
-              productQty > 0 ? "w-14 ml-2 opacity-100" : "w-0 ml-0 opacity-0 pointer-events-none"
-            }`}
-          >
-            <Heart className="w-6 h-6 text-black flex-shrink-0" strokeWidth={1.75} />
-          </button>
-        </div>
+        <button
+          type="button"
+          aria-label={variantQty > 0 ? "Убрать из избранного" : "Добавить в избранное"}
+          onClick={toggleFavorite}
+          className="pointer-events-auto w-12 h-12 rounded-full bg-white shadow-[0_4px_14px_rgba(0,0,0,0.18)] flex items-center justify-center active:scale-[0.92] transition-transform"
+        >
+          <Heart
+            className={`w-6 h-6 ${variantQty > 0 ? "fill-black text-black" : "text-black"}`}
+            strokeWidth={1.75}
+          />
+        </button>
       </div>
     </div>
   );
@@ -471,7 +443,6 @@ export function ProductModal({
   products,
   categories,
   onProductChange,
-  onOpenFavorites,
 }: ProductModalProps) {
   // Создаём карту категорий для быстрого доступа к unit
   const categoryMap = useMemo(() => {
@@ -938,7 +909,6 @@ export function ProductModal({
               product={product}
               getImageUrl={getImageUrl}
               categoryUnit={categoryMap.get(product.category_id)?.unit}
-              onOpenFavorites={onOpenFavorites}
             />
           </div>
         ) : (
@@ -962,7 +932,7 @@ export function ProductModal({
                   ref={position === 0 ? scrollContainerRef : undefined}
                   className="w-full flex-shrink-0 h-full overflow-y-auto overscroll-contain"
                 >
-                  <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} onOpenFavorites={onOpenFavorites} />
+                  <ProductCard product={p} getImageUrl={getImageUrl} categoryUnit={categoryMap.get(p.category_id)?.unit} />
                 </div>
               ))}
             </div>

@@ -34,6 +34,7 @@ interface FavoritesContextValue {
     optionIds: number[]
   ) => void;
   decrementProduct: (productId: number) => void;
+  removeProduct: (productId: number) => void;
   removeEntry: (key: string) => void;
 }
 
@@ -155,6 +156,16 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const removeProduct = useCallback((productId: number) => {
+    setMap((prev) => {
+      const copy: FavoritesMap = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (v.productId !== productId) copy[k] = v;
+      }
+      return copy;
+    });
+  }, []);
+
   const removeEntry = useCallback((key: string) => {
     setMap((prev) => {
       if (!prev[key]) return prev;
@@ -185,6 +196,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         addVariant,
         decrementVariant,
         decrementProduct,
+        removeProduct,
         removeEntry,
       }}
     >

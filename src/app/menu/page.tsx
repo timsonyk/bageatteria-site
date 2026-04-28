@@ -215,12 +215,6 @@ export default function MenuPage() {
     setSelectedProduct(product);
   }, []);
 
-  // Heart-кнопка в модалке: закрыть модалку и открыть лист избранного
-  const handleOpenFavorites = useCallback(() => {
-    setIsModalOpen(false);
-    setTimeout(() => setIsFavoritesSheetOpen(true), 300);
-  }, []);
-
   // Клик по товару из листа избранного: закрыть лист, открыть модалку.
   // Если товар недоступен на текущей точке — игнорируем клик.
   const handleFavoritesProductClick = useCallback((product: Product) => {
@@ -312,7 +306,6 @@ export default function MenuPage() {
         products={sortedProducts}
         categories={categories}
         onProductChange={handleProductChange}
-        onOpenFavorites={handleOpenFavorites}
       />
 
       {/* Favorites Sheet */}

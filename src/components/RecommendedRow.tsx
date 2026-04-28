@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { Heart, Minus, Plus } from "lucide-react";
+import { Heart } from "lucide-react";
 import { MouseEvent } from "react";
 import { Product } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { getDefaultVariant } from "@/lib/favorites";
 import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface RecommendedRowProps {
@@ -13,21 +14,19 @@ interface RecommendedRowProps {
 }
 
 export function RecommendedRow({ products, onProductClick }: RecommendedRowProps) {
-  const { addVariant, decrementProduct, getProductQty } = useFavorites();
+  const { addVariant, removeProduct, getProductQty } = useFavorites();
   if (products.length === 0) return null;
 
   const stop = (e: MouseEvent) => e.stopPropagation();
 
-  const handleAdd = (e: MouseEvent, p: Product) => {
+  const toggleFavorite = (e: MouseEvent, p: Product) => {
     stop(e);
-    // Из рекомендаций добавляем «голый» вариант — без модификаций и без размера,
-    // чтобы цена совпадала с отображаемой, а в избранном не появлялись модификаторы.
-    addVariant(p.id, null, []);
-  };
-
-  const handleSub = (e: MouseEvent, p: Product) => {
-    stop(e);
-    decrementProduct(p.id);
+    if (getProductQty(p.id) > 0) {
+      removeProduct(p.id);
+    } else {
+      const { sizeId, optionIds } = getDefaultVariant(p);
+      addVariant(p.id, sizeId, optionIds);
+    }
   };
 
   return (
@@ -93,65 +92,21 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
                   {price.toLocaleString("ru-RU")} ₽
                 </span>
                 {(() => {
-                  const qty = getProductQty(p.id);
-                  const active = qty > 0;
+                  const active = getProductQty(p.id) > 0;
                   return (
-                    <div
-                      onClick={stop}
-                      className="relative"
-                      style={{
-                        height: 26,
-                        width: active ? 84 : 26,
-                        borderRadius: 13,
-                        background: "#1A1410",
-                        color: "#F5F1EA",
-                        overflow: "hidden",
-                        transition: "width 260ms cubic-bezier(0.32, 0.72, 0, 1)",
-                      }}
+                    <button
+                      type="button"
+                      aria-label={active ? "Убрать из избранного" : "Добавить в избранное"}
+                      onClick={(e) => toggleFavorite(e, p)}
+                      className="w-7 h-7 rounded-full flex items-center justify-center active:scale-[0.92] transition-transform"
+                      style={{ background: "#1A1410", color: "#F5F1EA" }}
                     >
-                      <button
-                        type="button"
-                        aria-label="Добавить в избранное"
-                        onClick={(e) => handleAdd(e, p)}
-                        className="absolute inset-0 flex items-center justify-center transition-opacity duration-200"
-                        style={{
-                          opacity: active ? 0 : 1,
-                          pointerEvents: active ? "none" : "auto",
-                        }}
-                      >
-                        <Heart className="w-[13px] h-[13px]" strokeWidth={2} strokeLinecap="round" />
-                      </button>
-                      <div
-                        className="absolute inset-0 flex items-center justify-between px-1 transition-opacity duration-200"
-                        style={{
-                          opacity: active ? 1 : 0,
-                          pointerEvents: active ? "auto" : "none",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          aria-label="Уменьшить"
-                          onClick={(e) => handleSub(e, p)}
-                          className="w-6 h-6 flex items-center justify-center active:scale-[0.9] transition-transform"
-                        >
-                          <Minus className="w-[12px] h-[12px]" strokeWidth={2} />
-                        </button>
-                        <span
-                          className="tabular-nums text-center"
-                          style={{ fontSize: 12, fontWeight: 600, minWidth: 14 }}
-                        >
-                          {qty}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label="Увеличить"
-                          onClick={(e) => handleAdd(e, p)}
-                          className="w-6 h-6 flex items-center justify-center active:scale-[0.9] transition-transform"
-                        >
-                          <Plus className="w-[12px] h-[12px]" strokeWidth={2} />
-                        </button>
-                      </div>
-                    </div>
+                      <Heart
+                        className={`w-[14px] h-[14px] ${active ? "fill-current" : ""}`}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                      />
+                    </button>
                   );
                 })()}
               </div>
