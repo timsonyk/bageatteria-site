@@ -30,7 +30,7 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
       <div className="flex items-center gap-2 px-1 mb-3">
         <span className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] text-[#8E8E93] uppercase">
           <span aria-hidden>—</span>
-          В фокусе дня
+          Наши новинки
         </span>
       </div>
       <div
@@ -48,7 +48,7 @@ export function FeaturedCard({ product, categoryUnit, onClick }: FeaturedCardPro
             unoptimized
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent md:bg-gradient-to-r md:from-black/70 md:via-black/30 md:to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent md:bg-gradient-to-r md:from-black/50 md:via-black/20 md:to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10 md:inset-y-0 md:right-auto md:max-w-[50%] md:flex md:flex-col md:justify-end md:p-8">
           <h2
             className="text-white leading-[1.05] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] text-[32px] md:text-[40px]"

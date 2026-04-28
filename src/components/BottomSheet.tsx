@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -26,6 +26,43 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const isDesktop = useIsDesktop();
+
+  // Свайп-вниз для закрытия (только mobile).
+  const [verticalOffset, setVerticalOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isDesktop) return;
+    touchStartRef.current = { y: e.touches[0].clientY };
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isDesktop || !touchStartRef.current) return;
+    const diffY = e.touches[0].clientY - touchStartRef.current.y;
+    if (diffY > 0) setVerticalOffset(diffY);
+  };
+
+  const handleTouchEnd = () => {
+    if (isDesktop || !touchStartRef.current) return;
+    const offset = verticalOffset;
+    touchStartRef.current = null;
+    setIsDragging(false);
+    if (offset > 100) {
+      onClose();
+    }
+    setVerticalOffset(0);
+  };
+
+  // Сброс при закрытии
+  useEffect(() => {
+    if (!isOpen) {
+      setVerticalOffset(0);
+      setIsDragging(false);
+      touchStartRef.current = null;
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -103,8 +140,8 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
       <div
         className="absolute inset-0 bg-black"
         style={{
-          opacity: isAnimating ? 0.5 : 0,
-          transition: "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+          opacity: isAnimating ? Math.max(0, 0.5 - verticalOffset / 600) : 0,
+          transition: isDragging ? "none" : "opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
         onClick={onClose}
       />
@@ -125,14 +162,23 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
               }
             : {
                 top: fullHeight ? "max(44px, env(safe-area-inset-top, 44px))" : undefined,
-                transform: isAnimating ? "translateY(0)" : "translateY(100%)",
-                transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+                transform: isAnimating
+                  ? `translateY(${verticalOffset}px)`
+                  : "translateY(100%)",
+                transition: isDragging
+                  ? "none"
+                  : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
               }
         }
       >
-        {/* Handle (только mobile) */}
+        {/* Handle (только mobile) — свайп вниз для закрытия */}
         {!isDesktop && (
-          <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+          <div
+            className="flex justify-center pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <div className="w-10 h-1 bg-gray-300 rounded-full" />
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus, Trash2 } from "lucide-react";
+import { Heart, Minus, Plus, X } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { Product, Category } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
@@ -59,6 +59,12 @@ export function FavoritesSheet({
         })
         .filter((x): x is NonNullable<typeof x> => x !== null),
     [entries, productMap, availableProductIds]
+  );
+
+  // Итоговая сумма — только по доступным позициям
+  const totalPrice = useMemo(
+    () => rows.reduce((sum, r) => (r.isAvailable ? sum + r.price * r.entry.qty : sum), 0),
+    [rows]
   );
 
   return (
@@ -133,8 +139,8 @@ export function FavoritesSheet({
                             ))}
                           </div>
                         )}
-                        <div className="text-[14px] font-semibold text-black mt-1">
-                          {price.toLocaleString("ru-RU")} ₽
+                        <div className="text-[14px] font-semibold text-black mt-1 tabular-nums">
+                          {(price * entry.qty).toLocaleString("ru-RU")} ₽
                         </div>
                       </>
                     ) : (
@@ -143,44 +149,48 @@ export function FavoritesSheet({
                       </div>
                     )}
                   </div>
-                  <div
-                    className="flex-shrink-0 h-9 rounded-full bg-[#F2F2F7] flex items-center px-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      aria-label={entry.qty === 1 ? "Удалить" : "Уменьшить"}
-                      onClick={() => {
-                        if (entry.qty === 1) removeEntry(entry.key);
-                        else decrementVariant(product.id, entry.sizeId, entry.optionIds);
-                      }}
-                      className="w-8 h-8 flex items-center justify-center active:scale-[0.9] transition-transform"
+                  {isAvailable && (
+                    <div
+                      className="flex-shrink-0 h-9 rounded-full bg-[#F2F2F7] flex items-center px-1 self-center"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {entry.qty === 1 ? (
-                        <Trash2 className="w-[16px] h-[16px] text-black" strokeWidth={1.75} />
-                      ) : (
+                      <button
+                        type="button"
+                        aria-label="Уменьшить"
+                        onClick={() => decrementVariant(product.id, entry.sizeId, entry.optionIds)}
+                        disabled={entry.qty <= 1}
+                        className="w-8 h-8 flex items-center justify-center active:scale-[0.9] transition-transform disabled:opacity-30"
+                      >
                         <Minus className="w-[16px] h-[16px] text-black" strokeWidth={2} />
-                      )}
-                    </button>
-                    <span className="text-[14px] font-semibold text-black tabular-nums min-w-[20px] text-center">
-                      {entry.qty}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label="Увеличить"
-                      onClick={() => addVariant(product.id, entry.sizeId, entry.optionIds)}
-                      className="w-8 h-8 flex items-center justify-center active:scale-[0.9] transition-transform"
-                    >
-                      <Plus className="w-[16px] h-[16px] text-black" strokeWidth={2} />
-                    </button>
-                  </div>
+                      </button>
+                      <span className="text-[14px] font-semibold text-black tabular-nums min-w-[20px] text-center">
+                        {entry.qty}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Увеличить"
+                        onClick={() => addVariant(product.id, entry.sizeId, entry.optionIds)}
+                        className="w-8 h-8 flex items-center justify-center active:scale-[0.9] transition-transform"
+                      >
+                        <Plus className="w-[16px] h-[16px] text-black" strokeWidth={2} />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Удалить из избранного"
+                    onClick={(e) => { e.stopPropagation(); removeEntry(entry.key); }}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center self-center active:scale-[0.9] transition-transform text-[#8E8E93] hover:text-black"
+                  >
+                    <X className="w-[18px] h-[18px]" strokeWidth={2} />
+                  </button>
                 </li>
               ))}
             </ul>
           )}
 
           {recommendedProducts.length > 0 && (
-            <div className="px-4 pt-5 pb-6">
+            <div className="px-4 pt-5 pb-4">
               <h3 className="text-[20px] font-medium text-black tracking-[-0.3px] leading-none mb-3">Попробуйте ещё</h3>
               <div
                 className="flex gap-2.5 overflow-x-auto snap-x -mx-4 px-4 scroll-pl-4 scroll-pr-4"
@@ -221,6 +231,19 @@ export function FavoritesSheet({
             </div>
           )}
         </div>
+
+        {/* Итого — закреплено снизу */}
+        {totalPrice > 0 && (
+          <div
+            className="flex-shrink-0 border-t border-[#F2F2F7] px-4 py-3 flex items-center justify-between bg-white"
+            style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+          >
+            <span className="text-[15px] text-[#8E8E93]">Итого</span>
+            <span className="text-[20px] font-semibold text-black tabular-nums">
+              {totalPrice.toLocaleString("ru-RU")} ₽
+            </span>
+          </div>
+        )}
 
       </div>
     </BottomSheet>
