@@ -12,7 +12,7 @@ interface FeaturedCardProps {
   onProductClick: (p: Product) => void;
 }
 
-const AUTO_PLAY_MS = 10000;
+const AUTO_PLAY_MS = 12000;
 
 export function FeaturedCard({ products, categoryMap, onProductClick }: FeaturedCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
