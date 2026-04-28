@@ -38,21 +38,23 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     setDragOffset(0);
   }, [activeIndex]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-    setTouchStartY(e.touches[0].clientY);
+  // Pointer events работают и на тач, и на мышь.
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Игнорируем правую кнопку мыши
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    setTouchStartX(e.clientX);
+    setTouchStartY(e.clientY);
     setIsHorizontalSwipe(false);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (touchStartX == null || touchStartY == null) return;
-    const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - touchStartY;
+    const dx = e.clientX - touchStartX;
+    const dy = e.clientY - touchStartY;
     if (!isHorizontalSwipe) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
         setIsHorizontalSwipe(true);
       } else if (Math.abs(dy) > 8) {
-        // Вертикальный жест — не наш, не вмешиваемся (страница скроллит).
         setTouchStartX(null);
         setTouchStartY(null);
         return;
@@ -63,7 +65,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     }
   };
 
-  const handleTouchEnd = () => {
+  const handlePointerEnd = () => {
     if (touchStartX == null) {
       setDragOffset(0);
       return;
@@ -73,7 +75,6 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     setTouchStartY(null);
     setDragOffset(0);
     if (Math.abs(offset) > 50) {
-      // Подавляем последующий click (тач + клик после свайпа)
       suppressClickRef.current = true;
       setTimeout(() => {
         suppressClickRef.current = false;
@@ -96,10 +97,11 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
       </div>
       <div
         ref={containerRef}
-        className="relative rounded-[24px] overflow-hidden aspect-[1/1.15] md:aspect-[2.4/1]"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        className="relative rounded-[24px] overflow-hidden aspect-[1/1.15] md:aspect-[2.4/1] select-none touch-pan-y"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
       >
         {/* Слайды */}
         <div
@@ -196,7 +198,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
                   e.stopPropagation();
                   setActiveIndex(i);
                 }}
-                className={`rounded-full transition-all duration-300 ${
+                className={`rounded-full transition-all duration-300 ring-1 ring-black/15 ${
                   i === activeIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/55"
                 }`}
               />
