@@ -22,6 +22,7 @@ interface Product {
   recommended_menu_order?: number | null
   recommended_favorites_order?: number | null
   featured_menu_order?: number | null
+  featured_mobile_image?: string | null
   featured_desktop_image?: string | null
   sort_order: number
 }
@@ -111,6 +112,7 @@ export const HighlightsPage = () => {
   const [favRec, setFavRec] = useState<number[]>([])
   const [featuredIds, setFeaturedIds] = useState<number[]>([])
   const [featuredTexts, setFeaturedTexts] = useState<Record<number, string>>({})
+  const [featuredMobileImages, setFeaturedMobileImages] = useState<Record<number, string | null>>({})
   const [featuredDesktopImages, setFeaturedDesktopImages] = useState<Record<number, string | null>>({})
 
   useEffect(() => {
@@ -120,13 +122,16 @@ export const HighlightsPage = () => {
     const featured = sortByFlagOrder(products.filter((p) => p.is_featured_menu), 'featured_menu')
     setFeaturedIds(featured.map((p) => p.id))
     const texts: Record<number, string> = {}
-    const imgs: Record<number, string | null> = {}
+    const mobImgs: Record<number, string | null> = {}
+    const deskImgs: Record<number, string | null> = {}
     for (const p of featured) {
       texts[p.id] = p.featured_text ?? ''
-      imgs[p.id] = p.featured_desktop_image ?? null
+      mobImgs[p.id] = p.featured_mobile_image ?? null
+      deskImgs[p.id] = p.featured_desktop_image ?? null
     }
     setFeaturedTexts(texts)
-    setFeaturedDesktopImages(imgs)
+    setFeaturedMobileImages(mobImgs)
+    setFeaturedDesktopImages(deskImgs)
   }, [products])
 
   // Подтягиваем поля для свежедобавленных товаров
@@ -138,6 +143,16 @@ export const HighlightsPage = () => {
         if (next[id] === undefined) {
           const p = products.find((x) => x.id === id)
           next[id] = p?.featured_text ?? ''
+        }
+      }
+      return next
+    })
+    setFeaturedMobileImages((prev) => {
+      const next = { ...prev }
+      for (const id of featuredIds) {
+        if (next[id] === undefined) {
+          const p = products.find((x) => x.id === id)
+          next[id] = p?.featured_mobile_image ?? null
         }
       }
       return next
@@ -220,10 +235,12 @@ export const HighlightsPage = () => {
       const updates: Promise<unknown>[] = []
       for (const id of featuredIds) {
         const text = (featuredTexts[id] ?? '').trim()
+        const mobileImg = featuredMobileImages[id]
         const desktopImg = featuredDesktopImages[id]
         updates.push(
           api.put(`/admin/products/${id}`, {
             featured_text: text || null,
+            featured_mobile_image: mobileImg ? toStoredUrl(mobileImg) : null,
             featured_desktop_image: desktopImg ? toStoredUrl(desktopImg) : null,
           })
         )
@@ -258,6 +275,13 @@ export const HighlightsPage = () => {
     }
     return m
   }, [products])
+  const initialFeaturedMobileImages = useMemo(() => {
+    const m: Record<number, string | null> = {}
+    for (const p of products ?? []) {
+      if (p.is_featured_menu) m[p.id] = p.featured_mobile_image ?? null
+    }
+    return m
+  }, [products])
   const initialFeaturedDesktopImages = useMemo(() => {
     const m: Record<number, string | null> = {}
     for (const p of products ?? []) {
@@ -273,10 +297,11 @@ export const HighlightsPage = () => {
     if (!sameOrderedList(featuredIds, initialFeaturedIds)) return true
     for (const id of featuredIds) {
       if ((featuredTexts[id] ?? '') !== (initialFeaturedTexts[id] ?? '')) return true
+      if ((featuredMobileImages[id] ?? null) !== (initialFeaturedMobileImages[id] ?? null)) return true
       if ((featuredDesktopImages[id] ?? null) !== (initialFeaturedDesktopImages[id] ?? null)) return true
     }
     return false
-  }, [featuredIds, featuredTexts, featuredDesktopImages, initialFeaturedIds, initialFeaturedTexts, initialFeaturedDesktopImages])
+  }, [featuredIds, featuredTexts, featuredMobileImages, featuredDesktopImages, initialFeaturedIds, initialFeaturedTexts, initialFeaturedMobileImages, initialFeaturedDesktopImages])
 
   const featuredLimitReached = featuredIds.length > 5
 
@@ -416,16 +441,53 @@ export const HighlightsPage = () => {
         )}
         <div style={{ marginTop: 12 }}>
           {renderList(featuredIds, setFeaturedIds, (id) => {
+            const mobileImg = featuredMobileImages[id]
             const desktopImg = featuredDesktopImages[id]
+            const mobileImgUrl = toDisplayUrl(mobileImg)
             const desktopImgUrl = toDisplayUrl(desktopImg)
-            const fileList: UploadFile[] = desktopImgUrl
-              ? [{
-                  uid: `desktop-${id}`,
-                  name: 'desktop.jpg',
-                  url: desktopImgUrl,
-                  status: 'done',
-                }]
+            const mobileFileList: UploadFile[] = mobileImgUrl
+              ? [{ uid: `mobile-${id}`, name: 'mobile.jpg', url: mobileImgUrl, status: 'done' }]
               : []
+            const desktopFileList: UploadFile[] = desktopImgUrl
+              ? [{ uid: `desktop-${id}`, name: 'desktop.jpg', url: desktopImgUrl, status: 'done' }]
+              : []
+            const uploadFor = (
+              variant: 'mobile' | 'desktop',
+              setter: React.Dispatch<React.SetStateAction<Record<number, string | null>>>,
+              fileList: UploadFile[],
+            ) => (
+              <Upload
+                name="file"
+                maxCount={1}
+                fileList={fileList}
+                customRequest={async (options) => {
+                  const { file, onError, onSuccess } = options
+                  const formData = new FormData()
+                  formData.append('file', file as Blob)
+                  try {
+                    const res = await api.post('/admin/upload', formData, {
+                      headers: { 'Content-Type': 'multipart/form-data' },
+                    })
+                    const url = res.data.url as string
+                    onSuccess?.(res.data, file as never)
+                    setter((prev) => ({ ...prev, [id]: url }))
+                  } catch (err: unknown) {
+                    const detail =
+                      (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+                    message.error(detail || 'Ошибка загрузки')
+                    onError?.(err as Error)
+                  }
+                }}
+                onRemove={() => {
+                  setter((prev) => ({ ...prev, [id]: null }))
+                  return true
+                }}
+                accept="image/*"
+                listType="picture-card"
+              >
+                {fileList.length === 0 && (variant === 'mobile' ? '+ Mobile' : '+ Desktop')}
+              </Upload>
+            )
             return (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <Typography.Text type="secondary" style={{ display: 'block' }}>
@@ -441,48 +503,36 @@ export const HighlightsPage = () => {
                   placeholder="Например: слоёный, на французском масле"
                   showCount
                 />
-                <Typography.Text type="secondary" style={{ display: 'block' }}>
-                  Картинка для десктопа (landscape). Если не задана — используется обычная фотка товара.
-                </Typography.Text>
-                <Upload
-                  name="file"
-                  maxCount={1}
-                  fileList={fileList}
-                  customRequest={async (options) => {
-                    const { file, onError, onSuccess } = options
-                    const formData = new FormData()
-                    formData.append('file', file as Blob)
-                    try {
-                      const res = await api.post('/admin/upload', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                      })
-                      const url = res.data.url as string
-                      onSuccess?.(res.data, file as never)
-                      setFeaturedDesktopImages((prev) => ({ ...prev, [id]: url }))
-                    } catch (err: unknown) {
-                      const detail =
-                        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-                      message.error(detail || 'Ошибка загрузки')
-                      onError?.(err as Error)
-                    }
-                  }}
-                  onRemove={() => {
-                    setFeaturedDesktopImages((prev) => ({ ...prev, [id]: null }))
-                    return true
-                  }}
-                  accept="image/*"
-                  listType="picture-card"
-                >
-                  {fileList.length === 0 && '+ Фото'}
-                </Upload>
-                {desktopImgUrl && (
-                  <AntImage
-                    src={desktopImgUrl}
-                    alt="desktop preview"
-                    width={240}
-                    style={{ borderRadius: 8, objectFit: 'cover' }}
-                  />
-                )}
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                      Mobile (portrait). Если пусто — используется обычная фотка товара.
+                    </Typography.Text>
+                    {uploadFor('mobile', setFeaturedMobileImages, mobileFileList)}
+                    {mobileImgUrl && (
+                      <AntImage
+                        src={mobileImgUrl}
+                        alt="mobile preview"
+                        width={150}
+                        style={{ borderRadius: 8, objectFit: 'cover', marginTop: 8 }}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                      Desktop (landscape). Если пусто — используется mobile-картинка.
+                    </Typography.Text>
+                    {uploadFor('desktop', setFeaturedDesktopImages, desktopFileList)}
+                    {desktopImgUrl && (
+                      <AntImage
+                        src={desktopImgUrl}
+                        alt="desktop preview"
+                        width={240}
+                        style={{ borderRadius: 8, objectFit: 'cover', marginTop: 8 }}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             )
           })}

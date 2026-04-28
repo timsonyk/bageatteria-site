@@ -113,7 +113,9 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
         >
           {products.map((product) => {
             const price = parseFloat(product.base_price);
-            const mobileImageUrl = getProductImageUrl(product);
+            const defaultImageUrl = getProductImageUrl(product);
+            const mobileImageUrl =
+              prefixMediaUrl(product.featured_mobile_image) ?? defaultImageUrl;
             const desktopImageUrl =
               prefixMediaUrl(product.featured_desktop_image) ?? mobileImageUrl;
             const categoryUnit = categoryMap.get(product.category_id)?.unit;

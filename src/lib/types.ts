@@ -53,6 +53,7 @@ export interface Product {
   recommended_menu_order?: number | null;
   recommended_favorites_order?: number | null;
   featured_menu_order?: number | null;
+  featured_mobile_image?: string | null;
   featured_desktop_image?: string | null;
   media: MediaItem[] | null;
   sort_order: number;

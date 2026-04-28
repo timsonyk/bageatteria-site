@@ -73,6 +73,7 @@ class ProductUpdate(BaseModel):
     recommended_menu_order: Optional[int] = None
     recommended_favorites_order: Optional[int] = None
     featured_menu_order: Optional[int] = None
+    featured_mobile_image: Optional[str] = None
     featured_desktop_image: Optional[str] = None
     media: Optional[list] = None
 

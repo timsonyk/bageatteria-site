@@ -71,7 +71,8 @@ class Product(Base):
     recommended_menu_order = Column(Integer, nullable=True)
     recommended_favorites_order = Column(Integer, nullable=True)
     featured_menu_order = Column(Integer, nullable=True)
-    # Альтернативная картинка для десктоп-варианта «Наших новинок» (landscape).
+    # Альтернативные картинки для «Наших новинок» (mobile portrait / desktop landscape).
+    featured_mobile_image = Column(String(512), nullable=True)
     featured_desktop_image = Column(String(512), nullable=True)
     media = Column(JSON, nullable=True)
     sort_order = Column(Integer, default=0, nullable=False)

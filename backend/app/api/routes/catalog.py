@@ -109,6 +109,8 @@ def _normalize_product_media(product: ProductOut) -> ProductOut:
     data = product.model_dump()
     if data.get("media"):
         data["media"] = [_to_relative(m) for m in data["media"]]
+    if data.get("featured_mobile_image"):
+        data["featured_mobile_image"] = _to_relative(data["featured_mobile_image"])
     if data.get("featured_desktop_image"):
         data["featured_desktop_image"] = _to_relative(data["featured_desktop_image"])
     for group in data.get("modification_groups", []):
