@@ -285,13 +285,26 @@ function ProductCard({
           </div>
         )}
 
-        <div className="flex items-baseline gap-3 mt-2 ml-1">
-          <span className="text-[20px] font-semibold text-black">
-            {price.toLocaleString("ru-RU")} ₽
-          </span>
-          {weightDisplay && sortedSizes.length <= 1 && (
-            <span className="text-[14px] text-[#8E8E93]">{weightDisplay}</span>
-          )}
+        <div className="flex items-center justify-between mt-2 ml-1">
+          <div className="flex items-baseline gap-3">
+            <span className="text-[20px] font-semibold text-black">
+              {price.toLocaleString("ru-RU")} ₽
+            </span>
+            {weightDisplay && sortedSizes.length <= 1 && (
+              <span className="text-[14px] text-[#8E8E93]">{weightDisplay}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label={variantQty > 0 ? "Убрать из избранного" : "Добавить в избранное"}
+            onClick={toggleFavorite}
+            className="w-11 h-11 rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.12)] flex items-center justify-center active:scale-[0.92] transition-transform"
+          >
+            <Heart
+              className={`w-[22px] h-[22px] ${variantQty > 0 ? "fill-black text-black" : "text-black"}`}
+              strokeWidth={1.75}
+            />
+          </button>
         </div>
 
         {/* Описание */}
@@ -414,23 +427,6 @@ function ProductCard({
           </div>
         )}
       </div>
-      </div>
-      {/* Плавающее сердечко — закреплено в правом нижнем углу карточки */}
-      <div
-        className="sticky bottom-0 flex justify-end pointer-events-none"
-        style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", paddingRight: 16 }}
-      >
-        <button
-          type="button"
-          aria-label={variantQty > 0 ? "Убрать из избранного" : "Добавить в избранное"}
-          onClick={toggleFavorite}
-          className="pointer-events-auto w-12 h-12 rounded-full bg-white shadow-[0_4px_14px_rgba(0,0,0,0.18)] flex items-center justify-center active:scale-[0.92] transition-transform"
-        >
-          <Heart
-            className={`w-6 h-6 ${variantQty > 0 ? "fill-black text-black" : "text-black"}`}
-            strokeWidth={1.75}
-          />
-        </button>
       </div>
     </div>
   );
