@@ -90,9 +90,13 @@ export default function MenuPage() {
     [products]
   );
 
-  // Фокус дня: один активный товар
-  const featuredProduct = useMemo(
-    () => products.find((p) => p.is_active && p.is_featured_menu) ?? null,
+  // Наши новинки: до 5 активных товаров
+  const featuredProducts = useMemo(
+    () =>
+      products
+        .filter((p) => p.is_active && p.is_featured_menu)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .slice(0, 5),
     [products]
   );
 
@@ -250,11 +254,11 @@ export default function MenuPage() {
         {/* Фокус дня и рекомендации — над каталогом */}
         {!loading && selectedLocationId !== null && (
           <>
-            {featuredProduct && (
+            {featuredProducts.length > 0 && (
               <FeaturedCard
-                product={featuredProduct}
-                categoryUnit={categoryMap.get(featuredProduct.category_id)?.unit}
-                onClick={() => handleProductClick(featuredProduct)}
+                products={featuredProducts}
+                categoryMap={categoryMap}
+                onProductClick={handleProductClick}
               />
             )}
             <RecommendedRow
