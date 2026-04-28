@@ -106,7 +106,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
           className="absolute inset-0 flex"
           style={{
             transform: `translateX(calc(${-activeIndex * 100}% + ${dragOffset}px))`,
-            transition: touchStartX != null ? "none" : "transform 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
+            transition: touchStartX != null ? "none" : "transform 0.75s cubic-bezier(0.32, 0.72, 0, 1)",
           }}
         >
           {products.map((product) => {
