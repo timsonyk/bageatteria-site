@@ -506,7 +506,7 @@ export const HighlightsPage = () => {
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <div>
                     <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                      Mobile (portrait). Если пусто — используется обычная фотка товара.
+                      <b>Mobile</b> · соотношение <b>1 : 1.15</b> (портрет, чуть выше квадрата). Рекомендуется 1080 × 1242 px. Если пусто — берётся обычная фотка товара.
                     </Typography.Text>
                     {uploadFor('mobile', setFeaturedMobileImages, mobileFileList)}
                     {mobileImgUrl && (
@@ -520,7 +520,7 @@ export const HighlightsPage = () => {
                   </div>
                   <div>
                     <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                      Desktop (landscape). Если пусто — используется mobile-картинка.
+                      <b>Desktop</b> · соотношение <b>2.4 : 1</b> (широкий баннер). Рекомендуется 2400 × 1000 px. Если пусто — берётся mobile-картинка.
                     </Typography.Text>
                     {uploadFor('desktop', setFeaturedDesktopImages, desktopFileList)}
                     {desktopImgUrl && (
