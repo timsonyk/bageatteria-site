@@ -36,27 +36,34 @@ export const HighlightsPage = () => {
 
   const [menuRec, setMenuRec] = useState<number[]>([])
   const [favRec, setFavRec] = useState<number[]>([])
-  const [featured, setFeatured] = useState<number | null>(null)
-  const [featuredText, setFeaturedText] = useState<string>('')
+  const [featuredIds, setFeaturedIds] = useState<number[]>([])
+  const [featuredTexts, setFeaturedTexts] = useState<Record<number, string>>({})
 
   useEffect(() => {
     if (!products) return
     setMenuRec(products.filter((p) => p.is_recommended_menu).map((p) => p.id))
     setFavRec(products.filter((p) => p.is_recommended_favorites).map((p) => p.id))
-    const f = products.find((p) => p.is_featured_menu) ?? null
-    setFeatured(f?.id ?? null)
-    setFeaturedText(f?.featured_text ?? '')
+    const featured = products.filter((p) => p.is_featured_menu)
+    setFeaturedIds(featured.map((p) => p.id))
+    const texts: Record<number, string> = {}
+    for (const p of featured) texts[p.id] = p.featured_text ?? ''
+    setFeaturedTexts(texts)
   }, [products])
 
+  // Если человек добавил товар в "Наши новинки", подтянуть его текущий featured_text
   useEffect(() => {
     if (!products) return
-    if (featured === null) {
-      setFeaturedText('')
-      return
-    }
-    const p = products.find((x) => x.id === featured)
-    setFeaturedText(p?.featured_text ?? '')
-  }, [featured, products])
+    setFeaturedTexts((prev) => {
+      const next = { ...prev }
+      for (const id of featuredIds) {
+        if (next[id] === undefined) {
+          const p = products.find((x) => x.id === id)
+          next[id] = p?.featured_text ?? ''
+        }
+      }
+      return next
+    })
+  }, [featuredIds, products])
 
   const productOptions = useMemo(() => {
     if (!products || !categories) return []
@@ -105,12 +112,16 @@ export const HighlightsPage = () => {
 
   const saveFeatured = useMutation({
     mutationFn: async () => {
-      await syncFlag('is_featured_menu', featured !== null ? [featured] : [])
-      if (featured !== null) {
-        await api.put(`/admin/products/${featured}`, {
-          featured_text: featuredText.trim() ? featuredText : null,
-        })
+      await syncFlag('is_featured_menu', featuredIds)
+      // Сохраняем featured_text для каждого выбранного товара
+      const updates: Promise<unknown>[] = []
+      for (const id of featuredIds) {
+        const text = (featuredTexts[id] ?? '').trim()
+        updates.push(
+          api.put(`/admin/products/${id}`, { featured_text: text || null })
+        )
       }
+      await Promise.all(updates)
     },
     onSuccess: () => {
       message.success('Сохранено')
@@ -128,17 +139,26 @@ export const HighlightsPage = () => {
     () => (products ?? []).filter((p) => p.is_recommended_favorites).map((p) => p.id),
     [products]
   )
-  const initialFeatured = useMemo(
-    () => (products ?? []).find((p) => p.is_featured_menu)?.id ?? null,
+  const initialFeaturedIds = useMemo(
+    () => (products ?? []).filter((p) => p.is_featured_menu).map((p) => p.id),
     [products]
   )
-  const initialFeaturedText = useMemo(() => {
-    const p = (products ?? []).find((x) => x.id === initialFeatured)
-    return p?.featured_text ?? ''
-  }, [products, initialFeatured])
-  const featuredChanged =
-    featured !== initialFeatured ||
-    (featured !== null && featuredText !== initialFeaturedText)
+  const initialFeaturedTexts = useMemo(() => {
+    const m: Record<number, string> = {}
+    for (const p of products ?? []) {
+      if (p.is_featured_menu) m[p.id] = p.featured_text ?? ''
+    }
+    return m
+  }, [products])
+  const featuredChanged = useMemo(() => {
+    if (featuredIds.length !== initialFeaturedIds.length) return true
+    if (!featuredIds.every((id) => initialFeaturedIds.includes(id))) return true
+    for (const id of featuredIds) {
+      if ((featuredTexts[id] ?? '') !== (initialFeaturedTexts[id] ?? '')) return true
+    }
+    return false
+  }, [featuredIds, featuredTexts, initialFeaturedIds, initialFeaturedTexts])
+  const featuredLimitReached = featuredIds.length > 5
 
   const sameSet = (a: number[], b: number[]) =>
     a.length === b.length && a.every((x) => b.includes(x))
@@ -183,13 +203,13 @@ export const HighlightsPage = () => {
       </Card>
 
       <Card
-        title="Сегодня в фокусе"
+        title="Наши новинки"
         extra={
           <Button
             type="primary"
             size="small"
             loading={saveFeatured.isPending}
-            disabled={!featuredChanged}
+            disabled={!featuredChanged || featuredLimitReached}
             onClick={() => saveFeatured.mutate()}
           >
             Сохранить
@@ -197,31 +217,50 @@ export const HighlightsPage = () => {
         }
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
-          Большая карточка-баннер на главной. Только один товар.
+          Большая карточка-баннер на главной — листающаяся, до 5 товаров. Авто-перелистывание раз в 7 секунд.
         </Typography.Paragraph>
         <Select
-          placeholder="Не выбрано"
+          mode="multiple"
+          placeholder="Выберите до 5 товаров"
           style={{ width: '100%' }}
-          value={featured}
-          onChange={(v) => setFeatured(v ?? null)}
+          value={featuredIds}
+          onChange={(v) => setFeaturedIds(v as number[])}
           options={productOptions}
           optionFilterProp="label"
           showSearch
-          allowClear
+          maxTagCount="responsive"
+          status={featuredLimitReached ? 'error' : undefined}
         />
-        {featured !== null && (
-          <div style={{ marginTop: 12 }}>
-            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 6 }}>
-              Текст для фокуса дня (показывается под названием вместо описания товара)
-            </Typography.Text>
-            <Input.TextArea
-              value={featuredText}
-              onChange={(e) => setFeaturedText(e.target.value)}
-              rows={3}
-              maxLength={200}
-              placeholder="Например: слоёный, на французском масле"
-              showCount
-            />
+        {featuredLimitReached && (
+          <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+            Можно выбрать не больше 5 товаров.
+          </Typography.Text>
+        )}
+        {featuredIds.length > 0 && (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {featuredIds.map((id) => {
+              const p = (products ?? []).find((x) => x.id === id)
+              return (
+                <div key={id}>
+                  <Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
+                    {p?.name ?? `Товар #${id}`}
+                  </Typography.Text>
+                  <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 6 }}>
+                    Текст под названием (показывается на баннере)
+                  </Typography.Text>
+                  <Input.TextArea
+                    value={featuredTexts[id] ?? ''}
+                    onChange={(e) =>
+                      setFeaturedTexts((prev) => ({ ...prev, [id]: e.target.value }))
+                    }
+                    rows={2}
+                    maxLength={200}
+                    placeholder="Например: слоёный, на французском масле"
+                    showCount
+                  />
+                </div>
+              )
+            })}
           </div>
         )}
       </Card>
