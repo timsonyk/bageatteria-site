@@ -50,6 +50,10 @@ export interface Product {
   is_recommended_favorites?: boolean;
   is_featured_menu?: boolean;
   featured_text?: string | null;
+  recommended_menu_order?: number | null;
+  recommended_favorites_order?: number | null;
+  featured_menu_order?: number | null;
+  featured_desktop_image?: string | null;
   media: MediaItem[] | null;
   sort_order: number;
   sizes?: ProductSize[];

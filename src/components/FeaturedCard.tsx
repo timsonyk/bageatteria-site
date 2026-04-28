@@ -4,7 +4,7 @@ import Image from "next/image";
 import { MouseEvent, useEffect, useRef, useState } from "react";
 import { Product, Category } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
-import { getProductImageUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
+import { getProductImageUrl, prefixMediaUrl, PHOTO_PLACEHOLDER_STYLE } from "@/lib/media";
 
 interface FeaturedCardProps {
   products: Product[];
@@ -113,7 +113,9 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
         >
           {products.map((product) => {
             const price = parseFloat(product.base_price);
-            const imageUrl = getProductImageUrl(product);
+            const mobileImageUrl = getProductImageUrl(product);
+            const desktopImageUrl =
+              prefixMediaUrl(product.featured_desktop_image) ?? mobileImageUrl;
             const categoryUnit = categoryMap.get(product.category_id)?.unit;
             const hasUnitInWeight =
               typeof product.weight === "string" && /[а-яa-z]/i.test(product.weight);
@@ -130,15 +132,26 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
                   onProductClick(product);
                 }}
                 className="relative w-full h-full flex-shrink-0 cursor-pointer active:scale-[0.99] transition-transform"
-                style={imageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
+                style={mobileImageUrl ? { backgroundColor: "#EAEAEA" } : PHOTO_PLACEHOLDER_STYLE}
               >
-                {imageUrl && (
+                {mobileImageUrl && (
                   <Image
-                    src={imageUrl}
+                    src={mobileImageUrl}
                     alt={product.name}
                     fill
-                    className="object-cover pointer-events-none select-none"
-                    sizes="(max-width: 768px) 100vw, 1200px"
+                    className="object-cover pointer-events-none select-none md:hidden"
+                    sizes="100vw"
+                    unoptimized
+                    draggable={false}
+                  />
+                )}
+                {desktopImageUrl && (
+                  <Image
+                    src={desktopImageUrl}
+                    alt={product.name}
+                    fill
+                    className="object-cover pointer-events-none select-none hidden md:block"
+                    sizes="1200px"
                     unoptimized
                     draggable={false}
                   />

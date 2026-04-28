@@ -201,6 +201,46 @@ def bulk_update_product_sort_order(
     return {"updated": updated}
 
 
+@router.post("/highlights/order")
+def bulk_update_highlights_order(
+    payload: admin_schemas.HighlightsOrderUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_admin_user),
+):
+    """Bulk update sort order for one of the highlights collections.
+
+    flag: "recommended_menu" | "recommended_favorites" | "featured_menu"
+    Sets <flag>_order = index for each product in the list.
+    """
+    column_map = {
+        "recommended_menu": "recommended_menu_order",
+        "recommended_favorites": "recommended_favorites_order",
+        "featured_menu": "featured_menu_order",
+    }
+    column = column_map.get(payload.flag)
+    if column is None:
+        raise HTTPException(status_code=400, detail="Unknown highlights flag")
+
+    if not payload.product_ids:
+        return {"updated": 0}
+
+    products = db.query(cat_models.Product).filter(
+        cat_models.Product.id.in_(payload.product_ids)
+    ).all()
+    products_map = {p.id: p for p in products}
+
+    updated = 0
+    for index, pid in enumerate(payload.product_ids):
+        product = products_map.get(pid)
+        if product is None:
+            continue
+        setattr(product, column, index)
+        updated += 1
+
+    db.commit()
+    return {"updated": updated}
+
+
 @router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db), user=Depends(get_admin_user)):
     obj = db.query(cat_models.Product).filter(cat_models.Product.id == product_id).first()

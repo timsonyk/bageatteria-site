@@ -88,6 +88,10 @@ class ProductOut(BaseModel):
     is_recommended_favorites: bool = False
     is_featured_menu: bool = False
     featured_text: Optional[str] = None
+    recommended_menu_order: Optional[int] = None
+    recommended_favorites_order: Optional[int] = None
+    featured_menu_order: Optional[int] = None
+    featured_desktop_image: Optional[str] = None
     media: Optional[list] = None
     sort_order: int
     sizes: List[ProductSizeOut] = []

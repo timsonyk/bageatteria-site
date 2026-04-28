@@ -86,20 +86,37 @@ export default function MenuPage() {
     loadProducts();
   }, [selectedLocationId]);
 
-  // Рекомендации для главной
-  const recommendedMenu = useMemo(
-    () => products.filter((p) => p.is_active && p.is_recommended_menu),
-    [products]
+  // Сравниватель по optional order-полю с fallback на sort_order
+  const orderCmp = useCallback(
+    (key: "recommended_menu_order" | "recommended_favorites_order" | "featured_menu_order") =>
+      (a: Product, b: Product) => {
+        const av = a[key];
+        const bv = b[key];
+        if (av != null && bv != null) return av - bv;
+        if (av != null) return -1;
+        if (bv != null) return 1;
+        return a.sort_order - b.sort_order;
+      },
+    []
   );
 
-  // Наши новинки: до 5 активных товаров
+  // Рекомендации для главной
+  const recommendedMenu = useMemo(
+    () =>
+      products
+        .filter((p) => p.is_active && p.is_recommended_menu)
+        .sort(orderCmp("recommended_menu_order")),
+    [products, orderCmp]
+  );
+
+  // Наши новинки: до 5 активных товаров, в заданном в админке порядке
   const featuredProducts = useMemo(
     () =>
       products
         .filter((p) => p.is_active && p.is_featured_menu)
-        .sort((a, b) => a.sort_order - b.sort_order)
+        .sort(orderCmp("featured_menu_order"))
         .slice(0, 5),
-    [products]
+    [products, orderCmp]
   );
 
   // Карта категорий (для unit у фокус-карточки)
@@ -331,7 +348,9 @@ export default function MenuPage() {
         availableProductIds={availableProductIds}
         categories={categories}
         onProductClick={handleFavoritesProductClick}
-        recommendedProducts={products.filter((p) => p.is_active && p.is_recommended_favorites)}
+        recommendedProducts={products
+          .filter((p) => p.is_active && p.is_recommended_favorites)
+          .sort(orderCmp("recommended_favorites_order"))}
       />
 
       {/* Sticky bottom bar — полностью прозрачная обёртка (включая safe-area),

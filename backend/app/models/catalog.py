@@ -67,6 +67,12 @@ class Product(Base):
     is_recommended_favorites = Column(Boolean, default=False, nullable=False)
     is_featured_menu = Column(Boolean, default=False, nullable=False)
     featured_text = Column(Text, nullable=True)
+    # Порядок внутри подборок (nullable). Сортируем по этим полям, fallback — sort_order.
+    recommended_menu_order = Column(Integer, nullable=True)
+    recommended_favorites_order = Column(Integer, nullable=True)
+    featured_menu_order = Column(Integer, nullable=True)
+    # Альтернативная картинка для десктоп-варианта «Наших новинок» (landscape).
+    featured_desktop_image = Column(String(512), nullable=True)
     media = Column(JSON, nullable=True)
     sort_order = Column(Integer, default=0, nullable=False)
 

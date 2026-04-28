@@ -70,7 +70,17 @@ class ProductUpdate(BaseModel):
     is_recommended_favorites: Optional[bool] = None
     is_featured_menu: Optional[bool] = None
     featured_text: Optional[str] = None
+    recommended_menu_order: Optional[int] = None
+    recommended_favorites_order: Optional[int] = None
+    featured_menu_order: Optional[int] = None
+    featured_desktop_image: Optional[str] = None
     media: Optional[list] = None
+
+
+class HighlightsOrderUpdate(BaseModel):
+    """Bulk update sort order for one of the highlights collections."""
+    flag: str  # "recommended_menu" | "recommended_favorites" | "featured_menu"
+    product_ids: List[int]  # in desired display order
 
 
 class BulkPriceUpdateRequest(BaseModel):

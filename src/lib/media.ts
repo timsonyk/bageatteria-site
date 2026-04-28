@@ -16,6 +16,18 @@ export function getProductImageUrl(product: Product): string | null {
 }
 
 /**
+ * Префиксует относительный URL префиксом MEDIA_URL.
+ * Если URL уже абсолютный или null — возвращает как есть.
+ */
+export function prefixMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const MEDIA_URL =
+    process.env.NEXT_PUBLIC_MEDIA_URL || "http://localhost:8000";
+  return `${MEDIA_URL}${url}`;
+}
+
+/**
  * Серая штриховка-заглушка для товаров без фото.
  */
 export const PHOTO_PLACEHOLDER_STYLE: CSSProperties = {
