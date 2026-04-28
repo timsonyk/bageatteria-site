@@ -34,6 +34,8 @@ export default function MenuPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFavoritesSheetOpen, setIsFavoritesSheetOpen] = useState(false);
+  // Откуда открыта модалка: "all" — свайп по всему каталогу, "featured" — только по новинкам
+  const [modalSource, setModalSource] = useState<"all" | "featured">("all");
   const isScrollingRef = useRef(false);
   const { totalQty } = useFavorites();
 
@@ -205,6 +207,14 @@ export default function MenuPage() {
 
   // Обработка клика по товару
   const handleProductClick = useCallback((product: Product) => {
+    setModalSource("all");
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  }, []);
+
+  // Клик по товару из карусели «Наши новинки» — модалка свайпает только по новинкам
+  const handleFeaturedProductClick = useCallback((product: Product) => {
+    setModalSource("featured");
     setSelectedProduct(product);
     setIsModalOpen(true);
   }, []);
@@ -225,6 +235,7 @@ export default function MenuPage() {
     if (!availableProductIds.has(product.id)) return;
     setIsFavoritesSheetOpen(false);
     setTimeout(() => {
+      setModalSource("all");
       setSelectedProduct(product);
       setIsModalOpen(true);
     }, 300);
@@ -258,7 +269,7 @@ export default function MenuPage() {
               <FeaturedCard
                 products={featuredProducts}
                 categoryMap={categoryMap}
-                onProductClick={handleProductClick}
+                onProductClick={handleFeaturedProductClick}
               />
             )}
             <RecommendedRow
@@ -307,7 +318,7 @@ export default function MenuPage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         product={selectedProduct}
-        products={sortedProducts}
+        products={modalSource === "featured" ? featuredProducts : sortedProducts}
         categories={categories}
         onProductChange={handleProductChange}
       />
