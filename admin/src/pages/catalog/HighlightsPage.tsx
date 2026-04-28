@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Image as AntImage, Input, Select, Space, Typography, Upload, message } from 'antd'
+import { Button, Card, Image as AntImage, Input, Select, Space, Typography, Upload, message, theme } from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { HolderOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -80,13 +80,14 @@ function SortableRow({
   id: number
   children: (handleProps: { listeners: ReturnType<typeof useSortable>['listeners']; attributes: ReturnType<typeof useSortable>['attributes'] }) => React.ReactNode
 }) {
+  const { token } = theme.useToken()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
-    background: '#fff',
-    border: '1px solid #f0f0f0',
+    background: token.colorBgContainer,
+    border: `1px solid ${token.colorBorderSecondary}`,
     borderRadius: 8,
     padding: 10,
     display: 'flex',
@@ -310,7 +311,7 @@ export const HighlightsPage = () => {
                     <span
                       {...attributes}
                       {...listeners}
-                      style={{ cursor: 'grab', color: '#888', paddingTop: 4 }}
+                      style={{ cursor: 'grab', color: 'var(--ant-color-text-tertiary)', paddingTop: 4 }}
                       aria-label="Перетащить"
                     >
                       <HolderOutlined />
