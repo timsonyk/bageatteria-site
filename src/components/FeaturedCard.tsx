@@ -12,7 +12,7 @@ interface FeaturedCardProps {
   onProductClick: (p: Product) => void;
 }
 
-const AUTO_PLAY_MS = 12000;
+const AUTO_PLAY_MS = 7000;
 
 export function FeaturedCard({ products, categoryMap, onProductClick }: FeaturedCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -79,8 +79,8 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
       setTimeout(() => {
         suppressClickRef.current = false;
       }, 300);
-      if (offset < 0 && activeIndex < total - 1) setActiveIndex(activeIndex + 1);
-      else if (offset > 0 && activeIndex > 0) setActiveIndex(activeIndex - 1);
+      if (offset < 0) setActiveIndex((activeIndex + 1) % total);
+      else setActiveIndex((activeIndex - 1 + total) % total);
     }
     setIsHorizontalSwipe(false);
   };
@@ -108,7 +108,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
           className="absolute inset-0 flex"
           style={{
             transform: `translateX(calc(${-activeIndex * 100}% + ${dragOffset}px))`,
-            transition: touchStartX != null ? "none" : "transform 0.75s cubic-bezier(0.32, 0.72, 0, 1)",
+            transition: touchStartX != null ? "none" : "transform 0.9s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
           {products.map((product) => {
