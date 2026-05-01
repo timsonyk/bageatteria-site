@@ -98,13 +98,11 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
                       type="button"
                       aria-label={active ? "Убрать из избранного" : "Добавить в избранное"}
                       onClick={(e) => toggleFavorite(e, p)}
-                      className="w-7 h-7 rounded-full flex items-center justify-center active:scale-[0.92] transition-transform"
-                      style={{ background: "#1A1410", color: "#F5F1EA" }}
+                      className="w-7 h-7 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] flex items-center justify-center active:scale-[0.92] transition-transform"
                     >
                       <Heart
-                        className={`w-[14px] h-[14px] ${active ? "fill-current" : ""}`}
-                        strokeWidth={2}
-                        strokeLinecap="round"
+                        className={`w-[14px] h-[14px] text-black ${active ? "fill-black" : ""}`}
+                        strokeWidth={1.75}
                       />
                     </button>
                   );
