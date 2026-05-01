@@ -82,7 +82,7 @@ export function RecommendedRow({ products, onProductClick }: RecommendedRowProps
                 )}
               </div>
               <div
-                className="mt-2 line-clamp-2"
+                className="mt-2 line-clamp-2 min-h-[32px]"
                 style={{ fontSize: 13, fontWeight: 500, color: "#1A1410", lineHeight: 1.2 }}
               >
                 {p.name}
