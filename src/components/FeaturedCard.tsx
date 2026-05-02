@@ -13,34 +13,71 @@ interface FeaturedCardProps {
 }
 
 const AUTO_PLAY_MS = 7000;
+const TRANSITION = "transform 0.9s cubic-bezier(0.22, 1, 0.36, 1)";
 
 export function FeaturedCard({ products, categoryMap, onProductClick }: FeaturedCardProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const total = products.length;
+
+  // Виртуальный индекс по массиву с клонами:
+  // [clone(last), p0, p1, ..., p(N-1), clone(first)]
+  // 0 = клон последнего, 1..N = реальные слайды, N+1 = клон первого.
+  // Стартуем с 1 (первый реальный слайд).
+  const [vIndex, setVIndex] = useState(1);
+  const [noTransition, setNoTransition] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
   const [isHorizontalSwipe, setIsHorizontalSwipe] = useState(false);
   const suppressClickRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const total = products.length;
+
+  // Слайды с клонами для seamless-обёртки. Если 0 или 1 слайд — без клонов.
+  const slides = total > 1
+    ? [products[total - 1], ...products, products[0]]
+    : products;
+
+  // Реальный индекс для точек-индикатора (0..N-1)
+  const realIndex = total > 1 ? ((vIndex - 1) + total) % total : 0;
 
   // Авто-листание раз в 7 секунд
   useEffect(() => {
     if (total <= 1) return;
     const t = setInterval(() => {
-      setActiveIndex((i) => (i + 1) % total);
+      setNoTransition(false);
+      setVIndex((i) => i + 1);
     }, AUTO_PLAY_MS);
     return () => clearInterval(t);
-  }, [total, activeIndex]);
+  }, [total, vIndex]);
 
   // Сброс смещения при смене активной карточки
   useEffect(() => {
     setDragOffset(0);
-  }, [activeIndex]);
+  }, [vIndex]);
+
+  // По окончании анимации — если мы на клоне, мгновенно прыгаем на реальный слайд.
+  const handleTransitionEnd = () => {
+    if (total <= 1) return;
+    if (vIndex === 0) {
+      // Прыжок на реальный последний слайд без анимации
+      setNoTransition(true);
+      setVIndex(total);
+    } else if (vIndex === total + 1) {
+      setNoTransition(true);
+      setVIndex(1);
+    }
+  };
+
+  // После «безшумного» прыжка — снова включаем анимацию (через rAF×2 чтобы браузер успел применить позицию).
+  useEffect(() => {
+    if (!noTransition) return;
+    const r = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setNoTransition(false));
+    });
+    return () => cancelAnimationFrame(r);
+  }, [noTransition, vIndex]);
 
   // Pointer events работают и на тач, и на мышь.
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Игнорируем правую кнопку мыши
     if (e.pointerType === "mouse" && e.button !== 0) return;
     setTouchStartX(e.clientX);
     setTouchStartY(e.clientY);
@@ -74,15 +111,21 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     setTouchStartX(null);
     setTouchStartY(null);
     setDragOffset(0);
-    if (Math.abs(offset) > 50) {
+    if (Math.abs(offset) > 50 && total > 1) {
       suppressClickRef.current = true;
       setTimeout(() => {
         suppressClickRef.current = false;
       }, 300);
-      if (offset < 0) setActiveIndex((activeIndex + 1) % total);
-      else setActiveIndex((activeIndex - 1 + total) % total);
+      setNoTransition(false);
+      if (offset < 0) setVIndex((i) => i + 1);
+      else setVIndex((i) => i - 1);
     }
     setIsHorizontalSwipe(false);
+  };
+
+  const handleDotClick = (i: number) => {
+    setNoTransition(false);
+    setVIndex(i + 1); // i — реальный индекс, +1 потому что клон последнего стоит на 0
   };
 
   const stopPointer = (e: MouseEvent) => e.stopPropagation();
@@ -107,11 +150,12 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
         <div
           className="absolute inset-0 flex"
           style={{
-            transform: `translateX(calc(${-activeIndex * 100}% + ${dragOffset}px))`,
-            transition: touchStartX != null ? "none" : "transform 0.9s cubic-bezier(0.22, 1, 0.36, 1)",
+            transform: `translateX(calc(${-vIndex * 100}% + ${dragOffset}px))`,
+            transition: touchStartX != null || noTransition ? "none" : TRANSITION,
           }}
+          onTransitionEnd={handleTransitionEnd}
         >
-          {products.map((product) => {
+          {slides.map((product, slideIdx) => {
             const price = parseFloat(product.base_price);
             const defaultImageUrl = getProductImageUrl(product);
             const mobileImageUrl =
@@ -128,7 +172,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
               : null;
             return (
               <div
-                key={product.id}
+                key={`${product.id}-${slideIdx}`}
                 onClick={() => {
                   if (suppressClickRef.current) return;
                   onProductClick(product);
@@ -211,10 +255,10 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
                 aria-label={`Слайд ${i + 1}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveIndex(i);
+                  handleDotClick(i);
                 }}
                 className={`rounded-full transition-all duration-300 ring-1 ring-black/15 ${
-                  i === activeIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/55"
+                  i === realIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/55"
                 }`}
               />
             ))}
