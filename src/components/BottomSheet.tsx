@@ -85,20 +85,25 @@ export function BottomSheet({ isOpen, onClose, title, children, fullHeight = fal
 
   // Close on Escape key
   useEffect(() => {
+    if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
+
+  // Блокировка скролла body с задержкой при размораживании (поглощает тач-инерцию).
+  useEffect(() => {
+    if (isVisible) {
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    const t = setTimeout(() => {
+      document.body.style.overflow = "";
+    }, 150);
+    return () => clearTimeout(t);
+  }, [isVisible]);
 
   // iOS Safari theme-color: серый #7c7c7b пока шторка открыта (только mobile)
   useEffect(() => {

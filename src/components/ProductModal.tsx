@@ -585,22 +585,29 @@ export function ProductModal({
 
   // Keyboard navigation
   useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowLeft") goToPrev();
       if (e.key === "ArrowRight") goToNext();
     };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose, goToPrev, goToNext]);
+
+  // Блокировка скролла body. Пока модалка видна — body заблокирован.
+  // После закрытия даём ~150 мс задержку, чтобы остаточные тач-события свайпа
+  // вниз не уносили фон (иначе при свайпе закрытия меню сразу скроллится).
+  useEffect(() => {
+    if (isVisible) {
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    const t = setTimeout(() => {
+      document.body.style.overflow = "";
+    }, 150);
+    return () => clearTimeout(t);
+  }, [isVisible]);
 
   // Touch handlers for handle (close gesture)
   const handleTouchStart = (e: React.TouchEvent) => {
