@@ -2,13 +2,10 @@ import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import get_settings
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def constant_time_compare(a: str, b: str) -> bool:
@@ -44,9 +41,20 @@ def verify_token(token: str) -> Optional[str]:
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """bcrypt-хэш. Используем напрямую bcrypt — passlib 1.7.4 не дружит с bcrypt 4.x."""
+    return _bcrypt.hashpw(
+        password.encode("utf-8")[:72],
+        _bcrypt.gensalt(),
+    ).decode("ascii")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """Проверка пароля. Напрямую через bcrypt (минуя passlib)."""
+    try:
+        return _bcrypt.checkpw(
+            plain_password.encode("utf-8")[:72],
+            hashed_password.encode("ascii"),
+        )
+    except (ValueError, TypeError):
+        return False
 
