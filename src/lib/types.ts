@@ -25,6 +25,9 @@ export interface ProductSize {
 // Медиа элемент
 export interface MediaItem {
   url: string;
+  // Полноразмерный оригинал — нужен админке для повторного кадрирования.
+  // На публичном сайте не используется.
+  original_url?: string;
 }
 
 // Товар

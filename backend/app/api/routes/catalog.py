@@ -105,10 +105,28 @@ def _to_relative(url: str | None) -> str | None:
     return url
 
 
+def _normalize_media_entry(entry):
+    """Поддерживаем оба формата:
+    - старый: "url-как-строка"
+    - новый: {"url": "...", "original_url": "..."}
+    Оба URL приводятся к относительному пути.
+    """
+    if isinstance(entry, str):
+        return _to_relative(entry)
+    if isinstance(entry, dict):
+        result = dict(entry)
+        if result.get("url"):
+            result["url"] = _to_relative(result["url"])
+        if result.get("original_url"):
+            result["original_url"] = _to_relative(result["original_url"])
+        return result
+    return entry
+
+
 def _normalize_product_media(product: ProductOut) -> ProductOut:
     data = product.model_dump()
     if data.get("media"):
-        data["media"] = [_to_relative(m) for m in data["media"]]
+        data["media"] = [_normalize_media_entry(m) for m in data["media"]]
     if data.get("featured_mobile_image"):
         data["featured_mobile_image"] = _to_relative(data["featured_mobile_image"])
     if data.get("featured_desktop_image"):

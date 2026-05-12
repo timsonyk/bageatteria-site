@@ -72,7 +72,7 @@ interface Product {
   base_price: number
   sort_order: number
   is_active: boolean
-  media?: string[]
+  media?: Array<string | { url: string; original_url?: string | null }>
   size_label?: string
   [key: string]: any
 }
@@ -111,7 +111,10 @@ function SortableProductRow({
     opacity: isDragging ? 0.5 : 1,
   }
 
-  const imageUrl = product.media?.[0]
+  const mediaEntry = product.media?.[0]
+  const imageUrl = typeof mediaEntry === 'string'
+    ? mediaEntry
+    : (mediaEntry as { url?: string } | undefined)?.url
   const fullImageUrl = imageUrl ? toDisplayUrl(imageUrl) : null
 
   return (
@@ -287,20 +290,21 @@ export const ProductsPage = () => {
     return res.data.url as string
   }
 
-  // Повторное кадрирование уже загруженной картинки.
+  // Повторное кадрирование. Если в response есть original_url — кадрируем оригинал
+  // (полноразмерный файл, загруженный при первой загрузке). Если нет (legacy-запись) —
+  // кадрируем текущую url и сохраняем её как original для следующих перекадрирований.
   const recropFile = async (file: UploadFile) => {
-    const rawUrl = (file.response as any)?.url || toStoredUrl(file.url || '')
-    const displayUrl = file.url || (rawUrl ? toDisplayUrl(rawUrl) : undefined)
-    if (!displayUrl) {
+    const resp = (file.response as { url?: string; original_url?: string | null } | null) || null
+    const currentRaw = resp?.url || toStoredUrl(file.url || '')
+    const originalRaw = resp?.original_url || null
+    const sourceRaw = originalRaw || currentRaw
+    if (!sourceRaw) {
       message.error('Не удалось получить URL файла для кадрирования')
       return
     }
     try {
-      // Cache-busting: иначе браузер может отдать закэшированный ответ без CORS-заголовков.
       const cacheBuster = `cb=${Date.now()}`
-      const baseFetchUrl = rawUrl && rawUrl.startsWith('/') ? rawUrl : displayUrl
-      const fetchUrl = baseFetchUrl + (baseFetchUrl.includes('?') ? '&' : '?') + cacheBuster
-      // /uploads/ — публичные файлы, креды не нужны (и проще для CORS).
+      const fetchUrl = sourceRaw + (sourceRaw.includes('?') ? '&' : '?') + cacheBuster
       const res = await api.get(fetchUrl, { responseType: 'blob', withCredentials: false })
       const origBlob = res.data as Blob
       const src = URL.createObjectURL(origBlob)
@@ -311,10 +315,16 @@ export const ProductsPage = () => {
         URL.revokeObjectURL(src)
       }
       const uploadedUrl = await uploadBlob(cropped, `cropped-${file.uid}.jpg`)
+      const newOriginal = originalRaw || currentRaw
       setFileList((prev) =>
         prev.map((f) =>
           f.uid === file.uid
-            ? { ...f, url: toDisplayUrl(uploadedUrl), status: 'done', response: { url: uploadedUrl } }
+            ? {
+                ...f,
+                url: toDisplayUrl(uploadedUrl),
+                status: 'done',
+                response: { url: uploadedUrl, original_url: newOriginal },
+              }
             : f
         )
       )
@@ -482,12 +492,22 @@ export const ProductsPage = () => {
       form.setFieldsValue(product)
       if (product.media && Array.isArray(product.media)) {
         setFileList(
-          product.media.map((url: string, idx: number) => ({
-            uid: `${idx}`,
-            name: url.split('/').pop() || `изображение-${idx}`,
-            status: 'done' as const,
-            url: toDisplayUrl(url),
-          }))
+          product.media.map((entry: unknown, idx: number) => {
+            // Поддерживаем оба формата: строка или объект с url/original_url
+            const url = typeof entry === 'string'
+              ? entry
+              : (entry as { url?: string })?.url ?? ''
+            const originalUrl = typeof entry === 'object' && entry !== null
+              ? (entry as { original_url?: string }).original_url
+              : undefined
+            return {
+              uid: `${idx}`,
+              name: url.split('/').pop() || `изображение-${idx}`,
+              status: 'done' as const,
+              url: toDisplayUrl(url),
+              response: { url, original_url: originalUrl ?? null },
+            }
+          })
         )
       } else {
         setFileList([])
@@ -638,11 +658,17 @@ export const ProductsPage = () => {
           form={form}
           initialValues={{ is_active: true, sort_order: 0 }}
           onFinish={(values) => {
-            const mediaUrls = fileList
-              .map((f) => (f.response as any)?.url || f.url)
+            const media = fileList
+              .map((f) => {
+                const resp = (f.response as { url?: string; original_url?: string | null } | null) || null
+                const rawUrl = resp?.url || (f.url ? toStoredUrl(f.url) : '')
+                if (!rawUrl) return null
+                const url = toStoredUrl(rawUrl)
+                const originalUrl = resp?.original_url ? toStoredUrl(resp.original_url) : null
+                return originalUrl ? { url, original_url: originalUrl } : { url }
+              })
               .filter(Boolean)
-              .map(toStoredUrl)
-            const payload = { ...values, media: mediaUrls }
+            const payload = { ...values, media }
             if (payload.weight != null) payload.weight = String(payload.weight)
             saveProduct.mutate(payload)
           }}
@@ -749,31 +775,38 @@ export const ProductsPage = () => {
               multiple
               fileList={fileList}
               beforeUpload={async (file) => {
-                const objectUrl = URL.createObjectURL(file as Blob)
+                const origFile = file as File
+                const objectUrl = URL.createObjectURL(origFile)
                 try {
                   const blob = await openCropper(objectUrl)
                   URL.revokeObjectURL(objectUrl)
-                  const cropped = new File([blob], (file as File).name.replace(/\.[^.]+$/, '') + '.jpg', {
-                    type: 'image/jpeg',
-                  })
-                  return cropped
-                } catch {
-                  URL.revokeObjectURL(objectUrl)
-                  return Upload.LIST_IGNORE as any
-                }
-              }}
-              customRequest={async (options) => {
-                const { file, onError, onSuccess } = options
-                try {
-                  const rawUrl = await uploadBlob(file as Blob, (file as File).name)
-                  const url = toDisplayUrl(rawUrl)
-                  onSuccess?.({ url: rawUrl }, file as any)
-                  setFileList((prev) =>
-                    prev.map((f) => (f.uid === (file as UploadFile).uid ? { ...f, url, status: 'done' } : f))
-                  )
+                  // Загружаем ПАРАЛЛЕЛЬНО: оригинал (полноразмерный) + обрезанную версию.
+                  // Оригинал нужен для будущих повторных кадрирований без потери качества.
+                  const baseName = origFile.name.replace(/\.[^.]+$/, '')
+                  const ext = origFile.name.match(/\.[^.]+$/)?.[0] ?? '.jpg'
+                  const cropped = new File([blob], `${baseName}-cropped.jpg`, { type: 'image/jpeg' })
+                  const [originalUrl, croppedUrl] = await Promise.all([
+                    uploadBlob(origFile, `${baseName}${ext}`),
+                    uploadBlob(cropped, cropped.name),
+                  ])
+                  setFileList((prev) => [
+                    ...prev,
+                    {
+                      uid: `local-${Date.now()}-${Math.random()}`,
+                      name: cropped.name,
+                      url: toDisplayUrl(croppedUrl),
+                      status: 'done' as const,
+                      response: { url: croppedUrl, original_url: originalUrl },
+                    },
+                  ])
+                  return Upload.LIST_IGNORE as never
                 } catch (err: any) {
-                  message.error(err?.response?.data?.detail || 'Ошибка загрузки')
-                  onError?.(err)
+                  URL.revokeObjectURL(objectUrl)
+                  if (err) {
+                    console.error('Upload error:', err)
+                    message.error(err?.response?.data?.detail || err?.message || 'Ошибка загрузки')
+                  }
+                  return Upload.LIST_IGNORE as never
                 }
               }}
               onChange={({ fileList: fl }) => setFileList(fl)}
