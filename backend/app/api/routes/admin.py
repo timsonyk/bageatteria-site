@@ -1,9 +1,12 @@
 from typing import Optional
+import logging
 import os
 import uuid
 import io
 from decimal import Decimal, ROUND_HALF_UP
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status, Query, UploadFile, File, Request
 from sqlalchemy.orm import Session, joinedload
@@ -12,6 +15,7 @@ from app.api.admin_deps import clear_admin_cookie, get_admin_user, set_admin_coo
 from app.api.deps import get_db
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
+from app.core.security import constant_time_compare, mask_secret, verify_password
 from app.models import catalog as cat_models
 from app.models.order import Order, OrderStatus
 from app.models.user import User
@@ -27,7 +31,17 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @limiter.limit("5/minute")  # Max 5 login attempts per minute per IP
 def admin_login(request: Request, payload: admin_schemas.AdminLoginRequest, response: Response):
     settings = get_settings()
-    if payload.username != settings.admin_username or payload.password != settings.admin_password:
+    # Сначала проверяем username за константное время.
+    username_ok = constant_time_compare(payload.username, settings.admin_username)
+    # Пароль: предпочитаем bcrypt-хэш, fallback — plaintext (для dev).
+    if settings.admin_password_hash:
+        password_ok = verify_password(payload.password, settings.admin_password_hash)
+    elif settings.admin_password:
+        password_ok = constant_time_compare(payload.password, settings.admin_password)
+    else:
+        # Если ни хэша, ни plaintext не задано — никто не может войти.
+        password_ok = False
+    if not (username_ok and password_ok):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     set_admin_cookie(response, username=payload.username)
     return {"authenticated": True, "username": payload.username}
@@ -877,6 +891,7 @@ JPEG_QUALITY = 85  # Quality for JPEG compression
 
 
 @router.post("/upload")
+@limiter.limit("60/hour")
 async def upload_file(
     request: Request,
     file: UploadFile = File(...),
@@ -1023,7 +1038,8 @@ def send_push_notification(
             # await send_apns_notification(token.token, payload.title, payload.body)
             sent_count += 1
         except Exception as e:
-            print(f"Failed to send push to {token.token}: {e}")
+            # Не логируем сам токен — это PII. Только маскированную версию.
+            logger.warning("Failed to send push to %s: %s", mask_secret(token.token), e)
             failed_count += 1
 
     campaign.sent_count = sent_count

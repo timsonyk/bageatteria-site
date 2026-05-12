@@ -7,11 +7,19 @@ class Settings(BaseSettings):
     app_name: str = "Bageatteria API"
     app_env: str = Field("local", alias="APP_ENV")
     secret_key: str = Field(..., alias="SECRET_KEY")
-    access_token_expire_minutes: int = Field(60 * 24 * 30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    # Access token TTL (минуты). Снижено с 30 дней до 60 минут.
+    access_token_expire_minutes: int = Field(60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    # Refresh token TTL (минуты). 14 дней — стандартная практика для длинной сессии.
+    refresh_token_expire_minutes: int = Field(60 * 24 * 14, alias="REFRESH_TOKEN_EXPIRE_MINUTES")
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
     admin_cookie_secret: str = Field(..., alias="ADMIN_COOKIE_SECRET")
     admin_username: str = Field("admin", alias="ADMIN_USERNAME")
-    admin_password: str = Field("admin", alias="ADMIN_PASSWORD")
+    # Plaintext password (legacy, для локального dev).
+    admin_password: str = Field("", alias="ADMIN_PASSWORD")
+    # bcrypt-хэш пароля админа. Если задан — используется он, не plaintext.
+    admin_password_hash: str = Field("", alias="ADMIN_PASSWORD_HASH")
+    # CORS allowed origins (CSV). В production пустое значение приведёт к ошибке.
+    cors_origins: str = Field("", alias="CORS_ORIGINS")
 
     postgres_user: str = Field(..., alias="POSTGRES_USER")
     postgres_password: str = Field(..., alias="POSTGRES_PASSWORD")

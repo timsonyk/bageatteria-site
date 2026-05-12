@@ -1,3 +1,4 @@
+import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -8,6 +9,20 @@ from app.core.config import get_settings
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def constant_time_compare(a: str, b: str) -> bool:
+    """Сравнение за константное время — защита от timing-атак при сравнении plaintext-паролей."""
+    return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
+
+
+def mask_secret(value: str, visible: int = 6) -> str:
+    """Маскирует секретное значение для логов: показывает только первые `visible` символов."""
+    if not value:
+        return ""
+    if len(value) <= visible:
+        return "*" * len(value)
+    return value[:visible] + "…"
 
 
 def create_access_token(subject: str, expires_minutes: Optional[int] = None) -> str:

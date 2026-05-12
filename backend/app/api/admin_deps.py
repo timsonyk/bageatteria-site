@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Cookie, Depends, HTTPException, Response, status
@@ -29,7 +30,13 @@ def get_admin_user(session: Optional[str] = Cookie(None, alias=SESSION_COOKIE)):
 
 def set_admin_cookie(response: Response, username: str):
     settings = get_settings()
-    token = jwt.encode({"sub": username}, settings.admin_cookie_secret, algorithm=settings.jwt_algorithm)
+    # exp в JWT для серверной валидации, max_age у cookie — для браузера.
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.refresh_token_expire_minutes)
+    token = jwt.encode(
+        {"sub": username, "exp": expire},
+        settings.admin_cookie_secret,
+        algorithm=settings.jwt_algorithm,
+    )
 
     # Use secure cookie in production (requires HTTPS)
     is_production = settings.app_env not in ("local", "development")
@@ -38,10 +45,10 @@ def set_admin_cookie(response: Response, username: str):
         key=SESSION_COOKIE,
         value=token,
         httponly=True,
-        secure=is_production,  # True in production (HTTPS required)
+        secure=is_production,
         samesite="lax" if not is_production else "strict",
         path="/",
-        max_age=60 * 60 * 24 * 7,  # 7 days
+        max_age=settings.refresh_token_expire_minutes * 60,
     )
 
 
