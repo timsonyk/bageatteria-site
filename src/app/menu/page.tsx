@@ -10,6 +10,7 @@ import { LocationSelector } from "@/components/LocationSelector";
 import { FavoritesSheet } from "@/components/FavoritesSheet";
 import { RecommendedRow } from "@/components/RecommendedRow";
 import { FeaturedCard } from "@/components/FeaturedCard";
+import { Footer } from "@/components/Footer";
 import { getCategories, getProducts } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
 import { useFavorites } from "@/contexts/FavoritesContext";
@@ -329,6 +330,8 @@ export default function MenuPage() {
           </div>
         )}
       </main>
+
+      <Footer />
 
       {/* Product Modal */}
       <ProductModal
