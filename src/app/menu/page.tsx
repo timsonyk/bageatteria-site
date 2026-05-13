@@ -331,7 +331,16 @@ export default function MenuPage() {
         )}
       </main>
 
-      <Footer />
+      <div
+        style={{
+          paddingBottom:
+            totalQty > 0
+              ? "calc(96px + env(safe-area-inset-bottom, 0px))"
+              : "0",
+        }}
+      >
+        <Footer />
+      </div>
 
       {/* Product Modal */}
       <ProductModal
