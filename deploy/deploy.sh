@@ -7,8 +7,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-DOMAIN="slytn.ru"
-EMAIL="admin@slytn.ru"
+DOMAIN="bageatteria.pro"
+EMAIL="admin@bageatteria.pro"
 
 echo -e "${GREEN}=== Bageatteria Deploy Script ===${NC}"
 
@@ -47,7 +47,7 @@ if [ ! -f "certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
     cat > deploy/nginx/sites-temp/default.conf << 'EOF'
 server {
     listen 80;
-    server_name slytn.ru www.slytn.ru api.slytn.ru admin.slytn.ru;
+    server_name bageatteria.pro www.bageatteria.pro api.bageatteria.pro admin.bageatteria.pro;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -112,9 +112,9 @@ docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 echo -e "${GREEN}=== Deployment completed! ===${NC}"
 echo ""
 echo "Your services are now running at:"
-echo -e "  ${GREEN}https://slytn.ru${NC} - Main site"
-echo -e "  ${GREEN}https://api.slytn.ru${NC} - API"
-echo -e "  ${GREEN}https://admin.slytn.ru${NC} - Admin panel"
+echo -e "  ${GREEN}https://bageatteria.pro${NC} - Main site"
+echo -e "  ${GREEN}https://api.bageatteria.pro${NC} - API"
+echo -e "  ${GREEN}https://admin.bageatteria.pro${NC} - Admin panel"
 echo ""
 echo "Useful commands:"
 echo "  docker compose -f docker-compose.prod.yml logs -f    # View logs"
