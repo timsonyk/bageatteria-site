@@ -40,6 +40,12 @@ export function FavoritesSheet({
 }: FavoritesSheetProps) {
   const { entries, totalQty, addVariant, decrementVariant, removeEntry } = useFavorites();
 
+  const favoritedIds = useMemo(() => new Set(entries.map((e) => e.productId)), [entries]);
+  const visibleRecommended = useMemo(
+    () => recommendedProducts.filter((p) => !favoritedIds.has(p.id)),
+    [recommendedProducts, favoritedIds]
+  );
+
   const productMap = useMemo(() => {
     const m = new Map<number, Product>();
     for (const p of products) m.set(p.id, p);
@@ -190,14 +196,14 @@ export function FavoritesSheet({
             </ul>
           )}
 
-          {recommendedProducts.length > 0 && (
-            <div className="px-4 pt-5 pb-4">
-              <h3 className="text-[20px] font-medium text-black tracking-[-0.3px] leading-none mb-3">Попробуйте ещё</h3>
+          {visibleRecommended.length > 0 && (
+            <div className="pt-5 pb-4">
+              <h3 className="text-[20px] font-medium text-black tracking-[-0.3px] leading-none mb-3 px-4">Попробуйте ещё</h3>
               <div
-                className="flex gap-2.5 overflow-x-auto snap-x -mx-4 px-4 scroll-pl-4 scroll-pr-4"
+                className="flex gap-2.5 overflow-x-auto snap-x scroll-pl-4 px-4 [&::-webkit-scrollbar]:hidden"
                 style={{ scrollbarWidth: "none" }}
               >
-                {recommendedProducts.map((p) => (
+                {visibleRecommended.map((p) => (
                   <div
                     key={p.id}
                     className="flex-shrink-0 w-[140px] snap-start cursor-pointer active:scale-[0.98] transition-transform"

@@ -44,7 +44,8 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     if (total <= 1) return;
     const t = setInterval(() => {
       setNoTransition(false);
-      setVIndex((i) => i + 1);
+      // Не идти дальше клона первого — иначе при скрытой вкладке vIndex уходит в бесконечность
+      setVIndex((i) => (i <= total ? i + 1 : i));
     }, AUTO_PLAY_MS);
     return () => clearInterval(t);
   }, [total, vIndex]);
@@ -67,14 +68,29 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     }
   };
 
-  // После «безшумного» прыжка — снова включаем анимацию (через rAF×2 чтобы браузер успел применить позицию).
+  // После «безшумного» прыжка — снова включаем анимацию.
+  // setTimeout(50) надёжнее двойного rAF: даёт браузеру гарантированно применить позицию.
   useEffect(() => {
     if (!noTransition) return;
-    const r = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setNoTransition(false));
-    });
-    return () => cancelAnimationFrame(r);
+    const t = setTimeout(() => setNoTransition(false), 50);
+    return () => clearTimeout(t);
   }, [noTransition, vIndex]);
+
+  // При возврате на вкладку нормализуем vIndex, если он ушёл за границы пока вкладка была скрыта
+  useEffect(() => {
+    if (total <= 1) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      setVIndex(i => {
+        if (i <= 0) return total;
+        if (i > total + 1) return ((i - 1) % total) + 1;
+        return i;
+      });
+      setNoTransition(true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [total]);
 
   // Pointer events работают и на тач, и на мышь.
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -150,6 +166,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
         <div
           className="absolute inset-0 flex"
           style={{
+            willChange: "transform",
             transform: `translateX(calc(${-vIndex * 100}% + ${dragOffset}px))`,
             transition: touchStartX != null || noTransition ? "none" : TRANSITION,
           }}
