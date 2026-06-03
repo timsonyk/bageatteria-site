@@ -71,12 +71,12 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://api.bageatteria.pro
-        - NEXT_PUBLIC_MEDIA_URL=https://api.bageatteria.pro
+        - NEXT_PUBLIC_API_URL=https://api.bagetteria.com
+        - NEXT_PUBLIC_MEDIA_URL=https://api.bagetteria.com
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_URL=https://api.bageatteria.pro
-      - NEXT_PUBLIC_MEDIA_URL=https://api.bageatteria.pro
+      - NEXT_PUBLIC_API_URL=https://api.bagetteria.com
+      - NEXT_PUBLIC_MEDIA_URL=https://api.bagetteria.com
       - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
@@ -91,7 +91,7 @@ services:
       context: ./admin
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: https://api.bageatteria.pro
+        VITE_API_URL: https://api.bagetteria.com
     restart: unless-stopped
     networks:
       - internal

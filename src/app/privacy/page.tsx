@@ -32,8 +32,8 @@ export default function PrivacyPage() {
               Настоящая Политика разработана в соответствии с Федеральным законом
               от 27.07.2006 № 152-ФЗ «О персональных данных» и определяет порядок
               использования данных пользователей сайта{" "}
-              <a href="https://bageatteria.pro" className="underline">
-                bageatteria.pro
+              <a href="https://bagetteria.com" className="underline">
+                bagetteria.com
               </a>{" "}
               (далее — «Сайт»).
             </p>
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
             <p>
               Оператор вправе в одностороннем порядке вносить изменения в
               настоящую Политику. Актуальная редакция всегда доступна по адресу
-              bageatteria.pro/privacy.
+              bagetteria.com/privacy.
             </p>
           </section>
 

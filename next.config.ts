@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         hostname: "api.slytn.ru",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.bagetteria.com",
+        pathname: "/uploads/**",
+      },
     ],
   },
 };
