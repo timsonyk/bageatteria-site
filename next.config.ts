@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "api.bagetteria.com",
+        hostname: "api.bageatteria.com",
         pathname: "/uploads/**",
       },
     ],
