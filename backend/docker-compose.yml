@@ -32,40 +32,6 @@ services:
       - ./uploads:/app/uploads
       - ./scripts:/app/scripts
 
-  telegram-bot:
-    build: .
-    command: python telegram_bot.py
-    restart: unless-stopped
-    profiles: ["bots"]
-    env_file:
-      - .env
-    environment:
-      DB_HOST: db
-    depends_on:
-      - db
-      - backend
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    volumes:
-      - ./telegram_bot.py:/app/telegram_bot.py
-      - ./app:/app/app
-
-  auth-bot:
-    build: .
-    command: python auth_bot.py
-    restart: unless-stopped
-    profiles: ["bots"]
-    env_file:
-      - .env
-    depends_on:
-      - backend
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    volumes:
-      - ./auth_bot.py:/app/auth_bot.py
-
 volumes:
   db_data:
 

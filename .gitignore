@@ -46,3 +46,7 @@ certbot/
 *.bak
 *.bak.*
 index.html.bak*
+
+# local docs / one-off data
+DOCS.md
+prices/
