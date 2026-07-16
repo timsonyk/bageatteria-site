@@ -27,44 +27,6 @@ services:
     expose:
       - "8000"
 
-  # Telegram Bot
-  telegram-bot:
-    build: ./backend
-    command: python telegram_bot.py
-    restart: unless-stopped
-    profiles: ["bots"]
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - db
-      - backend
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    volumes:
-      - ./backend/telegram_bot.py:/app/telegram_bot.py
-      - ./backend/app:/app/app
-    networks:
-      - internal
-
-  # Auth Bot
-  auth-bot:
-    build: ./backend
-    command: python auth_bot.py
-    restart: unless-stopped
-    profiles: ["bots"]
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - backend
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    volumes:
-      - ./backend/auth_bot.py:/app/auth_bot.py
-    networks:
-      - internal
-
   # Next.js Site
   site:
     build:

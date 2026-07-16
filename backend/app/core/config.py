@@ -7,8 +7,6 @@ class Settings(BaseSettings):
     app_name: str = "Bageatteria API"
     app_env: str = Field("local", alias="APP_ENV")
     secret_key: str = Field(..., alias="SECRET_KEY")
-    # Access token TTL (минуты). Снижено с 30 дней до 60 минут.
-    access_token_expire_minutes: int = Field(60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     # Refresh token TTL (минуты). 14 дней — стандартная практика для длинной сессии.
     refresh_token_expire_minutes: int = Field(60 * 24 * 14, alias="REFRESH_TOKEN_EXPIRE_MINUTES")
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
@@ -26,16 +24,6 @@ class Settings(BaseSettings):
     postgres_db: str = Field(..., alias="POSTGRES_DB")
     db_host: str = Field("localhost", alias="DB_HOST")
     db_port: int = Field(5432, alias="DB_PORT")
-
-    telegram_bot_token: str = Field("", alias="TELEGRAM_BOT_TOKEN")
-    telegram_chat_id: str = Field("", alias="TELEGRAM_CHAT_ID")
-
-    # SMS (MTS Exolve)
-    sms_exolve_api_key: str = Field("", alias="SMS_EXOLVE_API_KEY")
-    sms_exolve_sender: str = Field("79926655394", alias="SMS_EXOLVE_SENDER")
-    sms_code_expire_minutes: int = Field(5, alias="SMS_CODE_EXPIRE_MINUTES")
-    sms_max_attempts: int = Field(3, alias="SMS_MAX_ATTEMPTS")
-    sms_rate_limit_minutes: int = Field(1, alias="SMS_RATE_LIMIT_MINUTES")
 
     base_url: AnyUrl = Field("http://localhost:8000", alias="BASE_URL")
     upload_dir: str = Field("uploads", alias="UPLOAD_DIR")

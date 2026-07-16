@@ -1,7 +1,0 @@
-export { StockDashboardPage } from './StockDashboardPage'
-export { DeliveriesPage } from './DeliveriesPage'
-export { DeliveryDetailPage } from './DeliveryDetailPage'
-export { InventoriesPage } from './InventoriesPage'
-export { InventoryDetailPage } from './InventoryDetailPage'
-export { StockItemsPage } from './StockItemsPage'
-export { MovementsPage } from './MovementsPage'

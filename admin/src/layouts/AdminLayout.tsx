@@ -23,35 +23,12 @@ const menuItems = [
   // { key: '/catalog/recommendations', label: <Link to="/catalog/recommendations">Рекомендации по категориям</Link> },
   { key: '/settings/store-locations', icon: <SettingOutlined />, label: <Link to="/settings/store-locations">Адреса магазинов</Link> },
   // {
-  //   key: '/stock',
-  //   icon: <InboxOutlined />,
-  //   label: 'Остатки',
-  //   children: [
-  //     { key: '/stock', label: <Link to="/stock">Дашборд</Link> },
-  //     { key: '/stock/deliveries', label: <Link to="/stock/deliveries">Приёмки</Link> },
-  //     { key: '/stock/inventories', label: <Link to="/stock/inventories">Инвентаризации</Link> },
-  //     { key: '/stock/items', label: <Link to="/stock/items">Номенклатура</Link> },
-  //     { key: '/stock/movements', label: <Link to="/stock/movements">История</Link> },
-  //   ],
-  // },
-  // {
-  //   key: '/customers',
-  //   icon: <UserOutlined />,
-  //   label: <Link to="/customers">Клиенты</Link>,
-  // },
-  // {
-  //   key: '/orders',
-  //   icon: <ShoppingCartOutlined />,
-  //   label: <Link to="/orders">Заказы</Link>,
-  // },
-  // {
   //   key: '/marketing',
   //   icon: <GiftOutlined />,
   //   label: 'Маркетинг',
   //   children: [
   //     { key: '/marketing/banners', label: <Link to="/marketing/banners">Баннеры</Link> },
   //     { key: '/marketing/promo-codes', label: <Link to="/marketing/promo-codes">Промокоды</Link> },
-  //     { key: '/marketing/notifications', icon: <BellOutlined />, label: <Link to="/marketing/notifications">Push-уведомления</Link> },
   //   ],
   // },
   // {
@@ -66,10 +43,6 @@ const menuItems = [
   // {
   //   key: '/settings/texts',
   //   label: <Link to="/settings/texts">Тексты</Link>,
-  // },
-  // {
-  //   key: '/settings/loyalty',
-  //   label: <Link to="/settings/loyalty">Лояльность</Link>,
   // },
 ]
 

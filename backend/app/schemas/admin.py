@@ -274,38 +274,6 @@ class AppTextUpdate(BaseModel):
     value: str
 
 
-class LoyaltySettingsUpdate(BaseModel):
-    cashback_percent: float
-
-
-class CustomerOut(BaseModel):
-    id: int
-    phone: str
-    name: Optional[str] = None
-    telegram_id: Optional[int] = None
-    legacy_client_id: Optional[str] = None
-    first_order_date: Optional[datetime] = None
-    orders_count: int
-    orders_sum: float
-    points_available: float
-    points_spent: float
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-class CustomerListResponse(BaseModel):
-    items: List[CustomerOut]
-    total: int
-
-
-class PointsAdjustmentRequest(BaseModel):
-    amount: float
-    type: str  # "add", "subtract", "set"
-    reason: Optional[str] = None
-
-
 class StoreLocationCreate(BaseModel):
     slug: str  # URL slug: "depo", "smolenskaya"
     name: Optional[str] = None  # Название точки - если не указано, берётся из адреса

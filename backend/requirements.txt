@@ -17,10 +17,6 @@ passlib[bcrypt]==1.7.4
 
 # HTTP / Forms
 python-multipart==0.0.22  # CVE-2024-53981, CVE-2026-24486 fixed
-httpx==0.27.0
-
-# Telegram
-python-telegram-bot==21.7
 
 # Rate limiting
 slowapi==0.1.9

@@ -1,8 +1,5 @@
 # SQLAlchemy models package
 
-from app.models.user import User, AuthCode, Address
-from app.models.loyalty import LoyaltyAccount, LoyaltyTransaction, LoyaltyTransactionType, Referral
-from app.models.order import Order, OrderItem, Payment
 from app.models.catalog import (
     Category,
     Product,
@@ -16,25 +13,8 @@ from app.models.catalog import (
     FAQ,
     AppText,
 )
-from app.models.notification import (
-    DeviceToken,
-    DevicePlatform,
-    Notification,
-    NotificationType,
-    PushCampaign,
-)
 
 __all__ = [
-    "User",
-    "AuthCode",
-    "Address",
-    "LoyaltyAccount",
-    "LoyaltyTransaction",
-    "LoyaltyTransactionType",
-    "Referral",
-    "Order",
-    "OrderItem",
-    "Payment",
     "Category",
     "Product",
     "ProductSize",
@@ -46,9 +26,4 @@ __all__ = [
     "DeliveryZone",
     "FAQ",
     "AppText",
-    "DeviceToken",
-    "DevicePlatform",
-    "Notification",
-    "NotificationType",
-    "PushCampaign",
 ]
