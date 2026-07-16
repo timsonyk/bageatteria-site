@@ -1,0 +1,7 @@
+admin
+backend
+deploy
+certbot
+.git
+node_modules
+.next

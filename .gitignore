@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# server-local
+backups/
+certbot/
+*.bak
+*.bak.*
+index.html.bak*
