@@ -53,7 +53,10 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
   }, [total, vIndex]);
 
   // По окончании анимации — если мы на клоне, мгновенно прыгаем на реальный слайд.
-  const handleTransitionEnd = () => {
+  const handleTransitionEnd = (e: React.TransitionEvent) => {
+    // transitionend всплывает и от детей (active:scale слайда) — реагируем только на сам трек,
+    // иначе прыжок с клона на реальный слайд срабатывает до конца перелистывания
+    if (e.target !== e.currentTarget) return;
     if (total <= 1) return;
     if (vIndex === 0) {
       // Прыжок на реальный последний слайд без анимации
