@@ -221,7 +221,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
                     draggable={false}
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent md:hidden pointer-events-none" />
+                <div className="absolute inset-0 md:top-auto md:h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent pointer-events-none" />
                 <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10 md:inset-y-0 md:right-auto md:max-w-[50%] md:flex md:flex-col md:justify-end md:p-8">
                   <h2
                     className="text-white leading-[1.05] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] text-[32px] md:text-[40px]"
