@@ -24,10 +24,12 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
   // Стартуем с 1 (первый реальный слайд).
   const [vIndex, setVIndex] = useState(1);
   const [noTransition, setNoTransition] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [isHorizontalSwipe, setIsHorizontalSwipe] = useState(false);
+  // Драг ведём через refs и пишем transform напрямую в DOM:
+  // setState на каждый pointermove ре-рендерил все слайды и ронял FPS.
+  const dragOffsetRef = useRef(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const isHorizontalSwipeRef = useRef(false);
+  const trackRef = useRef<HTMLDivElement>(null);
   const suppressClickRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -49,11 +51,6 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     }, AUTO_PLAY_MS);
     return () => clearInterval(t);
   }, [total, vIndex]);
-
-  // Сброс смещения при смене активной карточки
-  useEffect(() => {
-    setDragOffset(0);
-  }, [vIndex]);
 
   // По окончании анимации — если мы на клоне, мгновенно прыгаем на реальный слайд.
   const handleTransitionEnd = () => {
@@ -95,38 +92,43 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
   // Pointer events работают и на тач, и на мышь.
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    setTouchStartX(e.clientX);
-    setTouchStartY(e.clientY);
-    setIsHorizontalSwipe(false);
+    touchStartRef.current = { x: e.clientX, y: e.clientY };
+    isHorizontalSwipeRef.current = false;
+    dragOffsetRef.current = 0;
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (touchStartX == null || touchStartY == null) return;
-    const dx = e.clientX - touchStartX;
-    const dy = e.clientY - touchStartY;
-    if (!isHorizontalSwipe) {
+    const start = touchStartRef.current;
+    if (start == null) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (!isHorizontalSwipeRef.current) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
-        setIsHorizontalSwipe(true);
+        isHorizontalSwipeRef.current = true;
       } else if (Math.abs(dy) > 8) {
-        setTouchStartX(null);
-        setTouchStartY(null);
+        touchStartRef.current = null;
         return;
       }
     }
-    if (isHorizontalSwipe || Math.abs(dx) > Math.abs(dy)) {
-      setDragOffset(dx);
+    if (isHorizontalSwipeRef.current || Math.abs(dx) > Math.abs(dy)) {
+      dragOffsetRef.current = dx;
+      if (trackRef.current) {
+        trackRef.current.style.transition = "none";
+        trackRef.current.style.transform = `translateX(calc(${-vIndex * 100}% + ${dx}px))`;
+      }
     }
   };
 
   const handlePointerEnd = () => {
-    if (touchStartX == null) {
-      setDragOffset(0);
-      return;
+    if (touchStartRef.current == null) return;
+    const offset = dragOffsetRef.current;
+    touchStartRef.current = null;
+    dragOffsetRef.current = 0;
+    isHorizontalSwipeRef.current = false;
+    if (trackRef.current) {
+      trackRef.current.style.transition = TRANSITION;
+      trackRef.current.style.transform = `translateX(${-vIndex * 100}%)`;
     }
-    const offset = dragOffset;
-    setTouchStartX(null);
-    setTouchStartY(null);
-    setDragOffset(0);
     if (Math.abs(offset) > 50 && total > 1) {
       suppressClickRef.current = true;
       setTimeout(() => {
@@ -136,7 +138,6 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
       if (offset < 0) setVIndex((i) => i + 1);
       else setVIndex((i) => i - 1);
     }
-    setIsHorizontalSwipe(false);
   };
 
   const handleDotClick = (i: number) => {
@@ -164,11 +165,12 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
       >
         {/* Слайды */}
         <div
+          ref={trackRef}
           className="absolute inset-0 flex"
           style={{
             willChange: "transform",
-            transform: `translateX(calc(${-vIndex * 100}% + ${dragOffset}px))`,
-            transition: touchStartX != null || noTransition ? "none" : TRANSITION,
+            transform: `translateX(${-vIndex * 100}%)`,
+            transition: noTransition ? "none" : TRANSITION,
           }}
           onTransitionEnd={handleTransitionEnd}
         >
@@ -219,7 +221,7 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
                     draggable={false}
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent md:bg-gradient-to-r md:from-black/50 md:via-black/20 md:to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent md:hidden pointer-events-none" />
                 <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-10 md:inset-y-0 md:right-auto md:max-w-[50%] md:flex md:flex-col md:justify-end md:p-8">
                   <h2
                     className="text-white leading-[1.05] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] text-[32px] md:text-[40px]"
