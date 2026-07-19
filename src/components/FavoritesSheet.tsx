@@ -147,7 +147,7 @@ export function FavoritesSheet({
                           </div>
                         )}
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[14px] font-semibold text-black tabular-nums min-w-[76px]">
+                          <span className="text-[14px] font-semibold text-black tabular-nums min-w-[64px]">
                             {(price * entry.qty).toLocaleString("ru-RU")} ₽
                           </span>
                           <div
