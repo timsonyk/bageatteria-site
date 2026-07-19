@@ -108,6 +108,8 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
     if (!isHorizontalSwipeRef.current) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
         isHorizontalSwipeRef.current = true;
+        // Захватываем указатель: драг продолжает работать, даже если курсор ушёл за карусель
+        e.currentTarget.setPointerCapture(e.pointerId);
       } else if (Math.abs(dy) > 8) {
         touchStartRef.current = null;
         return;
@@ -137,10 +139,29 @@ export function FeaturedCard({ products, categoryMap, onProductClick }: Featured
       setTimeout(() => {
         suppressClickRef.current = false;
       }, 300);
-      setNoTransition(false);
-      if (offset < 0) setVIndex((i) => i + 1);
-      else setVIndex((i) => i - 1);
+      step(offset < 0 ? 1 : -1);
     }
+  };
+
+  // Шаг на соседний слайд. Если мы на клоне (быстрое листание опередило
+  // handleTransitionEnd), сначала мгновенно прыгаем на реальный слайд —
+  // иначе индекс уходит за клоны и появляются белые слайды.
+  const step = (dir: 1 | -1) => {
+    setNoTransition(false);
+    setVIndex((i) => {
+      let cur = i;
+      if (dir === 1 ? cur >= total + 1 : cur <= 0) {
+        const real = cur <= 0 ? total : 1;
+        if (trackRef.current) {
+          trackRef.current.style.transition = "none";
+          trackRef.current.style.transform = `translateX(${-real * 100}%)`;
+          void trackRef.current.offsetWidth; // reflow: применить позицию до анимации
+          trackRef.current.style.transition = TRANSITION;
+        }
+        cur = real;
+      }
+      return cur + dir;
+    });
   };
 
   const handleDotClick = (i: number) => {
