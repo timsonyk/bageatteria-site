@@ -155,10 +155,11 @@ function ProductCard({
 
     // Абсолютная дельта от выбранных опций (для добавок типа «+1 яйцо»).
     // Применяется только если у опции НЕ задан per-100g (тогда per-100g уже сработал выше).
+    // Если у товара своего КБЖУ нет (напр. «Добавить к завтраку») — база = 0, суммируем добавки.
     const addAbs = (
       base: number | null | undefined,
       delta: number | null | undefined,
-    ) => (base == null || delta == null ? base : base + delta);
+    ) => (delta == null ? base : (base ?? 0) + delta);
     modGroups.forEach((g) =>
       g.options.forEach((o) => {
         if (!selectedOptions.has(o.id)) return;
@@ -222,7 +223,9 @@ function ProductCard({
         if (selectedOptions.has(o.id) && o.weight) optionsWeight += o.weight;
       })
     );
-    if (!baseWeightDisplay || !optionsWeight) return baseWeightDisplay;
+    if (!optionsWeight) return baseWeightDisplay;
+    // Своего веса у товара нет (напр. «Добавить к завтраку») — показываем сумму добавок
+    if (!baseWeightDisplay) return `${optionsWeight} г`;
     const m = String(baseWeightDisplay).match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
     if (!m) return baseWeightDisplay;
     const unit = m[2].toLowerCase();
