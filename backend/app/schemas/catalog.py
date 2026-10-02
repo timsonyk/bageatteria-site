@@ -47,6 +47,7 @@ class ModificationOptionOut(BaseModel):
     proteins_per_100g: Optional[float] = None
     fats_per_100g: Optional[float] = None
     carbs_per_100g: Optional[float] = None
+    weight: Optional[int] = None
 
     class Config:
         from_attributes = True

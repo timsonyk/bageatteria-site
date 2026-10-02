@@ -146,6 +146,8 @@ class ModificationOption(Base):
     proteins_per_100g = Column(Float, nullable=True)
     fats_per_100g = Column(Float, nullable=True)
     carbs_per_100g = Column(Float, nullable=True)
+    # Граммовка опции, г — прибавляется к весу товара на сайте.
+    weight = Column(Integer, nullable=True)
 
     group = relationship("ModificationGroup", back_populates="options")
 

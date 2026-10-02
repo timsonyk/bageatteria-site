@@ -99,6 +99,8 @@ export interface ModificationOption {
   proteins_per_100g?: number | null;
   fats_per_100g?: number | null;
   carbs_per_100g?: number | null;
+  // Граммовка опции, г
+  weight?: number | null;
 }
 
 // Группа модификаций

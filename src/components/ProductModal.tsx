@@ -200,7 +200,7 @@ function ProductCard({
   }, [variantQty, product.id, currentSizeId, currentOptionIds, addVariant, decrementVariant]);
 
   // Формируем строку веса с единицей измерения
-  const weightDisplay = useMemo(() => {
+  const baseWeightDisplay = useMemo(() => {
     // Если выбран размер с volume, показываем его
     if (hasSizes && sortedSizes[selectedSizeIndex]?.volume) {
       return sortedSizes[selectedSizeIndex].volume;
@@ -213,6 +213,23 @@ function ProductCard({
     // Иначе добавляем единицу из категории
     return categoryUnit ? `${product.weight} ${categoryUnit}` : product.weight;
   }, [product.weight, categoryUnit, hasSizes, sortedSizes, selectedSizeIndex]);
+
+  // Прибавляем граммовку выбранных опций к весу товара (кроме кг/л — там другие единицы)
+  const weightDisplay = useMemo(() => {
+    let optionsWeight = 0;
+    modGroups.forEach((g) =>
+      g.options.forEach((o) => {
+        if (selectedOptions.has(o.id) && o.weight) optionsWeight += o.weight;
+      })
+    );
+    if (!baseWeightDisplay || !optionsWeight) return baseWeightDisplay;
+    const m = String(baseWeightDisplay).match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+    if (!m) return baseWeightDisplay;
+    const unit = m[2].toLowerCase();
+    if (unit === 'кг' || unit === 'л') return baseWeightDisplay;
+    const total = parseFloat(m[1].replace(',', '.')) + optionsWeight;
+    return m[2] ? `${total} ${m[2]}` : String(total);
+  }, [baseWeightDisplay, modGroups, selectedOptions]);
 
   return (
     <div className="w-full flex-shrink-0 flex flex-col min-h-full">
@@ -407,6 +424,11 @@ function ProductCard({
                             +{extraPrice.toLocaleString("ru-RU")} ₽
                           </span>
                         )}
+                        {option.weight ? (
+                          <span className="text-[11px] text-[#8E8E93] mt-0.5">
+                            +{option.weight} г
+                          </span>
+                        ) : null}
                         <div className="mt-1.5 w-5 h-5 flex items-center justify-center">
                           {isSelected ? (
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">

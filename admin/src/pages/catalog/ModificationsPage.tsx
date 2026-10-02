@@ -138,6 +138,7 @@ export const ModificationsPage = () => {
     },
     { title: 'Название', dataIndex: 'name' },
     { title: 'Доплата', dataIndex: 'extra_price', render: (v: number) => `${v} ₽` },
+    { title: 'Граммовка', dataIndex: 'weight', render: (v: number | null) => (v ? `${v} г` : '-') },
     { title: 'По умолчанию', dataIndex: 'is_default', render: (v: boolean) => (v ? 'Да' : 'Нет') },
     {
       title: 'Действия',
@@ -297,6 +298,9 @@ export const ModificationsPage = () => {
                 </Form.Item>
                 <Form.Item name="sort_order" label="Сортировка" style={{ marginBottom: 8, width: 100 }}>
                   <InputNumber style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="weight" label="Граммовка" style={{ marginBottom: 8, width: 120 }}>
+                  <InputNumber style={{ width: '100%' }} min={0} step={1} addonAfter="г" />
                 </Form.Item>
               </Space>
               <Space style={{ width: '100%' }} align="start">
