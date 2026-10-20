@@ -7,7 +7,10 @@ export function Footer() {
         <div className="flex flex-col gap-1">
           <span className="text-black font-medium">Bageatteria</span>
           <span>
-            ООО «БАГЕТТЕРИЯ» · ИНН 9704158488
+            ООО «БАГЕТТЕРИЯ» · ИНН 9704158488 · ОГРН 1227700512643
+          </span>
+          <span>
+            121069, г. Москва, Новинский б-р, д. 18, к. 2, помещ. 1/1
           </span>
         </div>
 
