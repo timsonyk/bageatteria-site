@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-veryberry}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-veryberry}
-      POSTGRES_DB: ${POSTGRES_DB:-veryberry}
+      POSTGRES_USER: ${POSTGRES_USER:-bageatteria}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
+      POSTGRES_DB: ${POSTGRES_DB:-bageatteria}
     # SECURITY: DB port exposed only on localhost, not externally
     # Remove ports section entirely in production, use internal Docker network
     ports:
