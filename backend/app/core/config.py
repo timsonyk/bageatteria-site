@@ -28,6 +28,23 @@ class Settings(BaseSettings):
     base_url: AnyUrl = Field("http://localhost:8000", alias="BASE_URL")
     upload_dir: str = Field("uploads", alias="UPLOAD_DIR")
 
+    # Карта лояльности (Apple Wallet + iikoCard). Пока не задано — эндпоинты /wallet отвечают 503.
+    wallet_enabled: bool = Field(False, alias="WALLET_ENABLED")
+    apple_pass_type_id: str = Field("", alias="APPLE_PASS_TYPE_ID")  # pass.com.bageatteria.loyalty
+    apple_team_id: str = Field("", alias="APPLE_TEAM_ID")
+    apple_pass_cert_path: str = Field("", alias="APPLE_PASS_CERT_PATH")  # PEM сертификата Pass Type ID
+    apple_pass_key_path: str = Field("", alias="APPLE_PASS_KEY_PATH")  # PEM приватного ключа
+    apple_pass_key_password: str = Field("", alias="APPLE_PASS_KEY_PASSWORD")
+    apple_wwdr_cert_path: str = Field("", alias="APPLE_WWDR_CERT_PATH")  # промежуточный сертификат Apple WWDR G4
+    wallet_web_service_url: str = Field("", alias="WALLET_WEB_SERVICE_URL")  # https://api.bageatteria.com/wallet
+
+    iiko_api_key: str = Field("", alias="IIKO_API_KEY")
+    iiko_app_id: str = Field("", alias="IIKO_APP_ID")
+    iiko_client_secret: str = Field("", alias="IIKO_CLIENT_SECRET")
+    iiko_api_login: str = Field("", alias="IIKO_API_LOGIN")
+    iiko_organization_id: str = Field("", alias="IIKO_ORGANIZATION_ID")
+    iiko_bonus_program_id: str = Field("", alias="IIKO_BONUS_PROGRAM_ID")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

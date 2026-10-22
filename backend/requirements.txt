@@ -16,6 +16,7 @@ python-jose[cryptography]==3.4.0  # PYSEC-2024-232, PYSEC-2024-233 fixed
 passlib[bcrypt]==1.7.4
 
 # HTTP / Forms
+httpx[http2]>=0.27.0  # iikoCloud API, APNs (HTTP/2) для обновления карт Wallet
 python-multipart==0.0.22  # CVE-2024-53981, CVE-2026-24486 fixed
 
 # Rate limiting

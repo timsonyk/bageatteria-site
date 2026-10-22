@@ -16,3 +16,4 @@ from app.models.catalog import (  # noqa: F401
     ModificationGroupProduct,
     StoreLocation,
 )
+from app.models.loyalty import LoyaltyCard, WalletDevice, WalletRegistration  # noqa: F401
