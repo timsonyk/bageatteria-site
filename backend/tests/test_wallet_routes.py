@@ -124,6 +124,17 @@ def test_full_wallet_cycle(client):
     assert c.get(f"/wallet/v1/devices/{DEV}/registrations/{PTID}").status_code == 204
 
 
+def test_android_walletpasses_registration(client):
+    c, Session = client
+    url = f"/wallet/v1/devices/android-dev/registrations/{PTID}/{SERIAL}"
+    r = c.post(url, json={"pushToken": "wp-token"}, headers={"Authorization": f"AndroidPass {TOKEN}"})
+    assert r.status_code == 201
+    with Session() as db:
+        assert db.get(WalletDevice, "android-dev").platform == "android"
+    r = c.get(f"/wallet/v1/passes/{PTID}/{SERIAL}", headers={"Authorization": f"AndroidPass {TOKEN}"})
+    assert r.status_code == 200
+
+
 def test_download_and_log(client):
     c, _ = client
     assert c.get(f"/wallet/download/{SERIAL}", params={"token": "bad"}).status_code == 401

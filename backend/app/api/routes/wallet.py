@@ -12,13 +12,16 @@ from email.utils import format_datetime, parsedate_to_datetime
 from functools import lru_cache
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.db.session import SessionLocal
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
 from app.models.loyalty import LoyaltyCard, WalletDevice, WalletRegistration
+from app.services import loyalty_sync
+from app.services.iiko_loyalty import client_from_settings
 from app.services.wallet_pass import PKPASS_MIME, LoyaltyCard as PassCard, PassSigner, build_pass_json, build_pkpass
 
 logger = logging.getLogger(__name__)
@@ -52,10 +55,21 @@ def _check_pass_type(pass_type_id: str, settings) -> None:
         raise HTTPException(status_code=404)
 
 
+# iPhone шлёт «ApplePass <token>», Android-приложение WalletPasses — «AndroidPass <token>»
+# (https://walletpasses.io/developer/). Протокол в остальном одинаковый.
+AUTH_PREFIXES = {"ApplePass ": "apple", "AndroidPass ": "android"}
+
+
+def _parse_auth(authorization: Optional[str]) -> tuple[str, str]:
+    for prefix, platform in AUTH_PREFIXES.items():
+        if authorization and authorization.startswith(prefix):
+            return authorization[len(prefix):], platform
+    return "", ""
+
+
 def _card_by_auth(db: Session, serial: str, authorization: Optional[str]) -> LoyaltyCard:
     card = db.query(LoyaltyCard).filter(LoyaltyCard.serial_number == serial, LoyaltyCard.is_active.is_(True)).first()
-    prefix = "ApplePass "
-    token = authorization[len(prefix):] if authorization and authorization.startswith(prefix) else ""
+    token, _ = _parse_auth(authorization)
     if not card or not hmac.compare_digest(token, card.auth_token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return card
@@ -98,11 +112,13 @@ def register_device(
     if not push_token:
         raise HTTPException(status_code=400, detail="pushToken required")
 
+    _, platform = _parse_auth(authorization)
     device = db.get(WalletDevice, device_id)
     if device:
         device.push_token = push_token
+        device.platform = platform
     else:
-        db.add(WalletDevice(device_library_id=device_id, push_token=push_token))
+        db.add(WalletDevice(device_library_id=device_id, push_token=push_token, platform=platform))
     exists = (
         db.query(WalletRegistration)
         .filter(WalletRegistration.device_library_id == device_id, WalletRegistration.card_id == card.id)
@@ -210,3 +226,38 @@ def download_pass(
         media_type=PKPASS_MIME,
         headers={"Content-Disposition": 'attachment; filename="bageatteria.pkpass"'},
     )
+
+
+def _sync_in_background(card_ids: list[int]) -> None:
+    settings = get_settings()
+    with SessionLocal() as db:
+        cards = db.query(LoyaltyCard).filter(LoyaltyCard.id.in_(card_ids)).all()
+        loyalty_sync.sync_cards(db, cards, client_from_settings(settings), loyalty_sync.make_notifier(settings))
+
+
+@router.post("/iiko-hook")
+@limiter.limit("120/minute")
+async def iiko_balance_hook(
+    request: Request,
+    background: BackgroundTasks,
+    token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+    settings=Depends(require_wallet),
+    db: Session = Depends(get_db),
+):
+    """Вебхук iikoCard «баланс гостя изменился». Тело — только сигнал: баланс потом берём из API."""
+    secret = settings.iiko_webhook_secret
+    given = token or (authorization or "").removeprefix("Bearer ").strip()
+    if not secret or not hmac.compare_digest(given, secret):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    try:
+        payload = await request.json()
+    except ValueError:
+        payload = {}
+    cards = loyalty_sync.cards_for_identifiers(db, loyalty_sync.extract_identifiers(payload))
+    if not cards:
+        logger.info("iiko-hook: карта не найдена, ключи тела: %s", sorted(payload)[:20] if isinstance(payload, dict) else type(payload).__name__)
+    else:
+        background.add_task(_sync_in_background, [c.id for c in cards])
+    # iiko блокирует вебхуки, которые не отвечают, поэтому отвечаем сразу.
+    return {"ok": True, "cards": len(cards)}

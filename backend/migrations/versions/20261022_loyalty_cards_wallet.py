@@ -39,6 +39,7 @@ def upgrade() -> None:
         'wallet_devices',
         sa.Column('device_library_id', sa.String(128), primary_key=True),
         sa.Column('push_token', sa.String(256), nullable=False),
+        sa.Column('platform', sa.String(16), nullable=False, server_default='apple'),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
     op.create_table(

@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     iiko_api_login: str = Field("", alias="IIKO_API_LOGIN")
     iiko_organization_id: str = Field("", alias="IIKO_ORGANIZATION_ID")
     iiko_bonus_program_id: str = Field("", alias="IIKO_BONUS_PROGRAM_ID")
+    # Пароль подписки на вебхуки в iikoCard (Настройки → Webhook-уведомления).
+    iiko_webhook_secret: str = Field("", alias="IIKO_WEBHOOK_SECRET")
+    # Необязательный ключ WalletPasses (Android): без него лимит 5 push/с.
+    walletpasses_api_key: str = Field("", alias="WALLETPASSES_API_KEY")
 
     class Config:
         env_file = ".env"

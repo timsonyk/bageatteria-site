@@ -37,6 +37,7 @@ class WalletDevice(Base):
 
     device_library_id = Column(String(128), primary_key=True)
     push_token = Column(String(256), nullable=False)
+    platform = Column(String(16), default="apple", nullable=False)  # apple | android (WalletPasses)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 

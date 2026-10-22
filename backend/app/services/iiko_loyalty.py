@@ -138,3 +138,15 @@ def bonus_balance(customer_info: dict) -> int:
         if w.get("type") == BONUS_WALLET_TYPE
     )
     return int(total)
+
+
+def client_from_settings(settings) -> IikoLoyaltyClient:
+    return IikoLoyaltyClient(
+        credentials=IikoCredentials(
+            api_key=settings.iiko_api_key,
+            app_id=settings.iiko_app_id,
+            client_secret=settings.iiko_client_secret,
+            api_login=settings.iiko_api_login,
+        ),
+        organization_id=settings.iiko_organization_id,
+    )
